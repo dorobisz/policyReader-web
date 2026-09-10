@@ -50,10 +50,18 @@ Poniższy plan precyzuje proces budowy interfejsu, mapując poszczególne ekrany
     *   Zintegrowano `BrowserRouter` i `AppLayout` w `src/main.tsx`.
     *   Zweryfikowano poprawność kompilacji TypeScript i bundle Vite (`npm run build`).
 
-### [ ] Krok 2.2: Komponent `SideNavBar` (Pasek Boczny)
+### ✅ Krok 2.2: Komponent `SideNavBar` (Pasek Boczny) — Ukończono
 *   **Makiety źródłowe (HTML):** `dashboard/code.html`, `Upload/code.html`, `Batch_Processing/code.html`.
 *   **Zadanie:** Implementacja statycznej części nawigacji.
 *   **Integracja:** Użycie `NavLink` z `react-router-dom` do obsługi linków i automatycznego podświetlania aktywnej sekcji (Dashboard / Upload) na podstawie aktualnej ścieżki URL.
+*   **Wykonane:**
+    *   Stworzono dedykowany komponent `src/components/SideNavBar.tsx` z obsługą `NavLink` z `react-router-dom`.
+    *   Zaimplementowano stan aktywny/nieaktywny dla linków (`Dashboard` pod `/` oraz `Upload` pod `/upload`): aktywny z tłem `bg-surface-container-high`, pogrubionym tekstem `text-on-surface` oraz ikoną Material Symbols z `FILL 1`.
+    *   Obsłużono animację i interakcję `active:scale-[0.98]` oraz hover `hover:bg-surface-container-low`.
+    *   Wbudowano sekcję profilu brokera w stopce paska bocznego z awatarem i danymi użytkownika.
+    *   Zintegrowano `SideNavBar` jako domyślny pasek boczny w `AppLayout` z automatycznym zamykaniem drawera na mobile po kliknięciu linku (`onItemClick`) oraz obsługą przycisku zamknięcia (`onClose`).
+    *   Zaktualizowano `src/components/index.ts` oraz routing w `src/main.tsx` o ścieżki `/` i `/upload`.
+    *   Zweryfikowano kompilację i build produkcyjny (`npm run build`).
 
 ---
 

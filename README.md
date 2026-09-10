@@ -47,7 +47,7 @@ policyReader-web/
 │   ├── components/
 │   │   ├── index.ts           # ✅ Re-eksporty komponentów i typów
 │   │   ├── AppLayout.tsx      # ✅ Główny szablon (fixowany sidebar, TopAppBar, scrollowany main)
-│   │   └── SideNavBar.tsx     # [TODO] Pasek boczny nawigacji
+│   │   └── SideNavBar.tsx     # ✅ Pasek boczny nawigacji (NavLink, active states, drawer support)
 │   └── pages/
 │       ├── Dashboard.tsx      # [TODO] Ścieżka /
 │       ├── Upload.tsx         # [TODO] Ścieżka /upload
@@ -74,8 +74,8 @@ policyReader-web/
 | `src/vite-env.d.ts` | ✅ Ukończono | Deklaracje typów Vite client |
 | `src/types/api.ts` | ✅ Ukończono | DTO FastAPI i modele UI: Batch, PolicyRecord, StatsMetrics, Upload |
 | `src/components/AppLayout.tsx` | ✅ Ukończono | Główny layout aplikacji: fixowany sidebar (desktop), drawer (mobile), sticky TopAppBar, scrollowany main (`<Outlet />`) |
-| `src/components/index.ts` | ✅ Ukończono | Centralny punkt eksportu komponentów UI |
-| `SideNavBar` | ⏳ Planowany | Sidebar z NavLink (Dashboard / Upload) |
+| `src/components/SideNavBar.tsx` | ✅ Ukończono | Pasek boczny nawigacji: `NavLink` z akcentem wizualnym, profilem brokera i obsługą drawera mobilnego |
+| `src/components/index.ts` | ✅ Ukończono | Centralny punkt eksportu komponentów UI i ich typów |
 | `Dashboard` (`/`) | ⏳ Planowany | Metryki + tabela Recent Batches |
 | `Upload` (`/upload`) | ⏳ Planowany | Drag & Drop + walidacja PDF |
 | `BatchStatus` (`/jobs/:id`) | ⏳ Planowany | Polling statusu, progress bar, logi |
