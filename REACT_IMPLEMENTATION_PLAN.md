@@ -26,9 +26,14 @@ Poniższy plan precyzuje proces budowy interfejsu, mapując poszczególne ekrany
     *   Stworzono pliki scaffold Vite: `index.html`, `src/main.tsx`, `src/vite-env.d.ts`, `vite.config.ts`, `tsconfig.json`.
     *   Zweryfikowano poprawność buildu (`vite build` — 0 errors, 0 warnings).
 
-### [ ] Krok 1.3: Definicje Typów TS (DTO)
-*   **Źródło:** Analiza modeli backendu i danych prezentowanych na makietach.
+### ✅ Krok 1.3: Definicje Typów TS (DTO) — Ukończono
+*   **Źródło:** Analiza modeli backendu FastAPI (`src/api/schemas.py`, `src/api/routes.py`) oraz danych prezentowanych na makietach.
 *   **Zadanie:** Stworzenie interfejsów TypeScript w `src/types/api.ts` dla obiektów: `Batch`, `PolicyRecord`, `StatsMetrics`.
+*   **Wykonane:**
+    *   Stworzono `src/types/api.ts` zawierający typy statusów (`BatchStatus`, `PolicyRecordStatus`, `ConfidenceLevel`).
+    *   Zmapowano 1:1 modele odpowiedzi API z FastAPI (`BatchUploadResponse`, `BatchErrorDetail`, `BatchStatusResponse`, `PolicyRecordResponse`, `BatchResultsResponse`).
+    *   Zdefiniowano modele UI (`StatsMetrics`, `Batch`, `PolicyRecord`, `BatchProcessingLogItem`, `UploadSelectedFile`, `PolicyFilterOptions`, `ApiError`).
+    *   Zaktualizowano konfigurację ścieżek w `tsconfig.json` i zweryfikowano bezbłędną kompilację `tsc --noEmit`.
 
 ---
 

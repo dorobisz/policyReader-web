@@ -43,7 +43,7 @@ policyReader-web/
 │   ├── index.css              # ✅ Globalne style (Tailwind, Inter, Material Symbols)
 │   ├── vite-env.d.ts          # ✅ Vite client type declarations
 │   ├── types/
-│   │   └── api.ts             # [TODO] Interfejsy TS: Batch, PolicyRecord, StatsMetrics
+│   │   └── api.ts             # ✅ Interfejsy TS: Batch, PolicyRecord, StatsMetrics, DTO
 │   ├── components/
 │   │   ├── AppLayout.tsx      # [TODO] Główny szablon z sidebarem
 │   │   └── SideNavBar.tsx     # [TODO] Pasek boczny nawigacji
@@ -71,7 +71,7 @@ policyReader-web/
 | `tsconfig.json` | ✅ Ukończono | TypeScript strict mode, JSX react-jsx |
 | `src/main.tsx` | ✅ Ukończono | Entry point React, import index.css |
 | `src/vite-env.d.ts` | ✅ Ukończono | Deklaracje typów Vite client |
-| `src/types/api.ts` | ⏳ Planowany | TS interfaces: Batch, PolicyRecord, StatsMetrics |
+| `src/types/api.ts` | ✅ Ukończono | DTO FastAPI i modele UI: Batch, PolicyRecord, StatsMetrics, Upload |
 | `AppLayout` | ⏳ Planowany | Główny layout aplikacji |
 | `SideNavBar` | ⏳ Planowany | Sidebar z NavLink (Dashboard / Upload) |
 | `Dashboard` (`/`) | ⏳ Planowany | Metryki + tabela Recent Batches |
@@ -86,9 +86,10 @@ policyReader-web/
 | Strona | Metoda | Endpoint | Opis |
 |---|---|---|---|
 | Upload | `POST` | `/upload` | Wysyłka plików PDF (multipart/form-data), zwraca `batch_id` |
-| BatchStatus | `GET` | `/jobs/{batch_id}/status` | Polling: status paczki, progress, logi rekordów |
+| BatchStatus | `GET` | `/jobs/{batch_id}/status` | Polling: status paczki, progress, błędy plików |
+| BatchResults | `GET` | `/jobs/{batch_id}/results` | Komplet wyekstrahowanych rekordów `PolicyRecordResponse` |
+| BatchResults | `GET` | `/jobs/{batch_id}/export/csv` | Eksport danych do pliku CSV z BOM UTF-8-SIG |
 | Dashboard | `GET` | *(wymagany)* | Zagregowane metryki + lista ostatnich paczek |
-| BatchResults | `GET` | *(wymagany)* | Lista `PolicyRecord` dla danej paczki |
 
 ---
 
