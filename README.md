@@ -54,11 +54,11 @@ policyReader-web/
 │   │   ├── ProgressBar.tsx    # ✅ Komponent paska postępu z kolorami statusów
 │   │   └── MetricCard.tsx     # ✅ Karta metryki Bento Grid ze stanem ładowania
 │   └── pages/
-│       ├── DashboardView.tsx  # ✅ Ścieżka / (Overview, Bento Grid, Recent Batches)
-│       ├── UploadView.tsx     # ✅ Ścieżka /upload (Drag & Drop, walidacja PDF, Start Processing)
-│       ├── BatchStatus.tsx    # [TODO] Ścieżka /jobs/:batch_id
-│       └── BatchResults.tsx   # [TODO] Ścieżka /result/:batch_id
-├── screen_mockups/            # Makiety HTML Design Systemu
+│       ├── DashboardView.tsx    # ✅ Ścieżka / (Overview, Bento Grid, Recent Batches)
+│       ├── UploadView.tsx       # ✅ Ścieżka /upload (Drag & Drop, walidacja PDF, Start Processing)
+│       ├── BatchStatusView.tsx  # ✅ Ścieżka /jobs/:batchId (Polling, progress-pulse, Bento Grid, logi, tooltipy)
+│       └── BatchResults.tsx     # [TODO] Ścieżka /result/:batch_id
+├── screen_mockups/              # Makiety HTML Design Systemu
 ├── REACT_IMPLEMENTATION_PLAN.md
 └── .agents/rules/global_directive.md
 ```
@@ -87,7 +87,7 @@ policyReader-web/
 | `src/components/index.ts` | ✅ Ukończono | Centralny punkt eksportu komponentów UI i ich typów |
 | `src/pages/DashboardView.tsx` (`/`) | ✅ Ukończono | Widok Overview: Bento Grid (3 metryki), filtrowalna tabela Recent Batches z paginacją i linkami do `/jobs/{id}` |
 | `src/pages/UploadView.tsx` (`/upload`) | ✅ Ukończono | Strefa Drag & Drop, walidacja plików PDF (max 50MB), lista Selected Files, wysyłka POST /upload i przekierowanie |
-| `BatchStatus` (`/jobs/:id`) | ⏳ Planowany | Polling statusu, progress bar, logi |
+| `src/pages/BatchStatusView.tsx` (`/jobs/:id`) | ✅ Ukończono | Polling statusu (/jobs/{id}/status), animowany pasek postępu (progress-pulse), Bento Grid (4 liczniki), tabela Processing Log z tooltipami błędów OCR i warunkowym przyciskiem Batch Results |
 | `BatchResults` (`/result/:id`) | ⏳ Planowany | Tabela wyników, eksport CSV |
 
 ---

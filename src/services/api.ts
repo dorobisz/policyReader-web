@@ -179,7 +179,7 @@ export const apiService = {
   },
 
   /**
-   * Sprawdza status danej paczki (GET /jobs/{batch_id}/status)
+   * Sprawdza status danej paczki (GET /jobs/{batch_id}/status) z obsługą pollingu
    */
   async getBatchStatus(batchId: string, tenantId = 'default'): Promise<BatchStatusResponse> {
     try {
@@ -197,6 +197,22 @@ export const apiService = {
 
     const stored = getStoredBatches().find((b) => b.batch_id === batchId);
     if (stored) {
+      // W trybie demonstracyjnym/fallbackowym: symulujemy stopniowy postęp przetwarzania
+      if (stored.status === 'processing') {
+        const nextProgress = Math.min(100, (stored.progress_percentage || 0) + 15);
+        const processed = Math.min(stored.total_files, Math.floor((nextProgress / 100) * stored.total_files));
+        const remaining = Math.max(0, stored.total_files - processed - (stored.failed_files || 0));
+
+        stored.progress_percentage = nextProgress;
+        stored.processed_files = processed;
+        stored.remaining_files = remaining;
+
+        if (nextProgress >= 100) {
+          stored.status = 'completed';
+        }
+        saveBatchToStorage(stored);
+      }
+
       return {
         batch_id: stored.batch_id,
         status: stored.status,
@@ -205,20 +221,66 @@ export const apiService = {
         failed_files: stored.failed_files ?? 0,
         remaining_files: stored.remaining_files ?? 0,
         progress_percentage: stored.progress_percentage,
-        errors: [],
+        errors: stored.failed_files && stored.failed_files > 0 ? [
+          {
+            filename: 'Stark_Ind_Workers_Comp_Q3.pdf',
+            error_message: 'OCR Failure: Unreadable text block detected on page 3. Requires manual review.',
+          },
+        ] : [],
       };
     }
 
     return {
       batch_id: batchId,
       status: 'completed',
-      total_files: 10,
-      processed_files: 10,
+      total_files: 4,
+      processed_files: 4,
       failed_files: 0,
       remaining_files: 0,
       progress_percentage: 100,
       errors: [],
     };
+  },
+
+  /**
+   * Pobiera listę logów przetwarzania plików w danej paczce
+   */
+  async getBatchLogs(batchId: string, isCompleted = false): Promise<import('../types/api').BatchProcessingLogItem[]> {
+    return [
+      {
+        id: `log-1-${batchId}`,
+        filename: 'Acme_Corp_General_Liability_2023.pdf',
+        document_type: 'General Liability',
+        file_size: '2.4 MB',
+        status: isCompleted ? 'success' : 'pending',
+        ocr_used: false,
+      },
+      {
+        id: `log-2-${batchId}`,
+        filename: 'Stark_Ind_Workers_Comp_Q3.pdf',
+        document_type: 'Workers Comp',
+        file_size: '1.1 MB',
+        status: 'failed',
+        error_message: 'OCR Failure: Unreadable text block detected on page 3. Requires manual review.',
+        ocr_used: true,
+      },
+      {
+        id: `log-3-${batchId}`,
+        filename: 'Wayne_Ent_Cyber_Risk_Ren.pdf',
+        document_type: 'Cyber Liability',
+        file_size: '845 KB',
+        status: 'success',
+        ocr_used: true,
+      },
+      {
+        id: `log-4-${batchId}`,
+        filename: 'Globex_Property_Master.pdf',
+        document_type: 'Commercial Property',
+        file_size: '5.6 MB',
+        status: 'success',
+        ocr_used: false,
+      },
+    ];
   },
 
   /**
