@@ -1,0 +1,81 @@
+# Zaktualizowany Plan Implementacji Frontendu BrokerEngine (React + TS + Vite)
+
+Poniższy plan precyzuje proces budowy interfejsu, mapując poszczególne ekrany React bezpośrednio na strukturę plików makiet dostarczoną w katalogu `screen_mockups`. Plan zakłada wykorzystanie React, TypeScript, Vite oraz Tailwind CSS skonfigurowanego według dostarczonego Design Systemu.
+
+## 1. Konfiguracja i Fundamenty (Mapowanie Design Systemu)
+
+### Krok 1.1: Konfiguracja Tailwind CSS
+*   **Źródło:** Dane z sekcji `colors`, `typography`, `rounded`, `spacing` w pliku `DESIGN`.
+*   **Zadanie:** Aktualizacja `tailwind.config.js` w celu zdefiniowania customowych kolorów (np. `surface-bright`, `primary-container`), mapowania fontów Inter oraz zdefiniowania skal odstępów i zaokrągleń.
+
+### Krok 1.2: Globalne Style i Ikony
+*   **Źródło:** Sekcja `<head>` w dostarczonych plikach HTML.
+*   **Zadanie:** Dodanie importu fontu 'Inter' oraz konfiguracji Material Symbols Outlined do globalnego pliku CSS (`index.css`).
+
+### Krok 1.3: Definicje Typów TS (DTO)
+*   **Źródło:** Analiza modeli backendu i danych prezentowanych na makietach.
+*   **Zadanie:** Stworzenie interfejsów TypeScript w `src/types/api.ts` dla obiektów: `Batch`, `PolicyRecord`, `StatsMetrics`.
+
+---
+
+## 2. Architektura Komponentów i Układu (Shell)
+
+### Krok 2.1: Komponent `AppLayout` (Główny Szablon)
+*   **Zadanie:** Stworzenie głównego kontenera z fixowanym paskiem bocznym po lewej i scrollowanym obszarem treści po prawej.
+
+### Krok 2.2: Komponent `SideNavBar` (Pasek Boczny)
+*   **Makiety źródłowe (HTML):** `dashboard/code.html`, `Upload/code.html`, `Batch_Processing/code.html`.
+*   **Zadanie:** Implementacja statycznej części nawigacji.
+*   **Integracja:** Użycie `NavLink` z `react-router-dom` do obsługi linków i automatycznego podświetlania aktywnej sekcji (Dashboard / Upload) na podstawie aktualnej ścieżki URL.
+
+---
+
+## 3. Implementacja Ekranów i Integracja z API
+
+Poniższe kroki opisują implementację konkretnych ścieżek (routes) w aplikacji.
+
+### Krok 3.1: Ścieżka `/` (Dashboard Overview)
+*   **Makieta źródłowa (HTML):** `dashboard/code.html`
+*   **Backend API (Wymagany):** Endpointy zwracające zagregowane metryki (Total, Success Rate) oraz listę ostatnich paczek.
+*   **Zadania React:**
+    *   Implementacja kart metryk (Bento Grid).
+    *   Implementacja tabeli "Recent Batches".
+    *   Zmapowanie statusów z HTML (Processing - sync/spin, Completed - check, Failed - close) na dynamiczne komponenty Badge.
+    *   Linki w kolumnie "Batch ID" muszą kierować do ścieżki `/jobs/{batch_id}`.
+
+### Krok 3.2: Ścieżka `/upload` (Document Upload)
+*   **Makieta źródłowa (HTML):** `Upload/code.html`
+*   **Backend API:** `POST /upload` (multipart/form-data).
+*   **Zadania React:**
+    *   Implementacja strefy "Drag & Drop". Obsługa zdarzeń `onDrop`, `onDragOver` w celu zmiany stylów i przechwycenia plików.
+    *   Walidacja frontendu: akceptacja tylko plików `.pdf`.
+    *   Implementacja dynamicznej listy "Selected Files" z możliwością usuwania plików przed wysłaniem.
+    *   **Integracja:** Obsługa przycisku "Start Processing". Wysłanie plików przez API, odebranie nowego `batch_id` i przekierowanie na stronę ścieżki `/jobs/{batch_id}`.
+
+### Krok 3.3: Ścieżka `/jobs/{batch_id}` (Batch Processing Status)
+*   **Makieta źródłowa (HTML):** `Batch_Processing/code.html`
+*   **Backend API:** `GET /jobs/{batch_id}/status` (polling).
+*   **Zadania React:**
+    *   **Polling danych:** Implementacja mechanizmu (np. `useEffect` z `setInterval` lub React Query) do cyklicznego odpytywania API o status paczki.
+    *   Dynamiczna aktualizacja paska postępu (Progress Bar) i animacji pulsowania.
+    *   Aktualizacja liczników w Bento Gridzie (Total, Processed, Failed, Remaining).
+    *   Implementacja tabeli "Processing Log". Nowe wiersze pojawiają się dynamicznie w miarę przetwarzania.
+    *   Implementacja Tooltipa błędu (czarny box z DESIGN) pojawiającego się po najechaniu na ikonę błędu w tabeli.
+    *   Przycisk "Batch Results" aktywuje się (zmienia styl z disabled) dopiero, gdy status paczki zmieni się na "completed".
+
+### Krok 3.4: Ścieżka `/result/{batch_id}` (Batch Results)
+*   **Makieta źródłowa (HTML):** `result/code.html`
+*   **Backend API (Wymagany):** Endpoint zwracający listę wyekstrahowanych rekordów polis (`PolicyRecord`) dla danej paczki.
+*   **Zadania React:**
+    *   Tabela wyników: dynamiczne renderowanie wyekstrahowanych danych (Ubezpieczyciel, Kwota, Data).
+    *   Obsługa statusów konfidencyjności (HIGH CONF. / REVIEW) z odpowiednimi kolorami.
+    *   Implementacja frontendu filtrów (Dropdowny w górnym pasku).
+    *   Implementacja logiki dla przycisków: "Export to CSV" (pobranie pliku), "RESOLVE" (kieruje do edytora - brak makiety edytora).
+
+---
+
+## 4. Prace Wykończeniowe i Optymalizacja
+
+*   **Responsywność:** Weryfikacja działania na urządzeniach mobilnych (ukrywanie Sidebaru, zmiana gridów na 1-kolumnowe).
+*   **Stany Ładowania:** Dodanie komponentów Skeleton Screen w miejscach tabel i metryk podczas oczekiwania na dane z API.
+*   **Obsługa Błędów:** Implementacja Error Boundary dla całych stron oraz globalnego systemu powiadomień (Toast) dla błędów API.
