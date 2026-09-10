@@ -8,6 +8,7 @@
 ## 2. IMPLEMENTATION PLAN & COMMIT WORKFLOW (MANDATORY STEPS)
 Gdy pojawi się prośba o realizację planu wdrożenia (lub jego kroków):
 * **Git Commit po zmianach:** Po wykonaniu poprawek/zmian w kodzie dla danego kroku, natychmiast zrób lokalny git commit (`git commit -m "..."`). **NIE RÓB PUSHA (`git push`) do zdalnego repozytorium**.
+* **Format tytułu komita:** Jeśli realizujesz krok z planu, tytuł komita **MUSI ZAWSZE zaczynać się od numeru realizowanego kroku** (np. `Krok 2.2: Implementacja komponentu SideNavBar`, `Krok 2.2: Aktualizacja dokumentacji i planu`).
 * **Aktualizacja Planu:** Po zrobieniu komita zmień plik planu wdrożenia (np. `REACT_IMPLEMENTATION_PLAN.md` lub aktywny plan) i zaznacz realizowany krok jako wykonany (`[x]` / `✅ Ukończono`).
 
 ## 3. COMPONENT & ARCHITECTURE DOCUMENTATION (MANDATORY UPDATE)
