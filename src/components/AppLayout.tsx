@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { SideNavBar } from './SideNavBar';
 
 export interface AppLayoutUser {
   name: string;
@@ -76,80 +77,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         }`}
         aria-label="Główna nawigacja"
       >
-        {sidebar ? (
-          sidebar
-        ) : (
-          <div className="flex flex-col h-full">
-            {/* Brand Header */}
-            <div className="px-md mb-xl flex items-center justify-between">
-              <div className="flex items-center gap-sm">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-surface-container flex items-center justify-center text-primary font-bold shrink-0">
-                  BE
-                </div>
-                <div>
-                  <h1 className="font-headline-md text-headline-md font-bold text-on-surface leading-tight">
-                    BrokerEngine
-                  </h1>
-                  <p className="font-label-md text-label-md text-on-surface-variant">
-                    Policy Intelligence
-                  </p>
-                </div>
-              </div>
-
-              {/* Close Button on mobile */}
-              <button
-                type="button"
-                onClick={closeMobileMenu}
-                className="md:hidden p-xs rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors"
-                aria-label="Zamknij menu"
-              >
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </button>
-            </div>
-
-            {/* Default Navigation placeholder slot */}
-            <nav className="flex-1 px-sm space-y-xs overflow-y-auto">
-              <a
-                href="/"
-                className="flex items-center gap-md px-md py-sm rounded-lg bg-surface-container-high text-on-surface font-semibold active:scale-[0.98] transition-transform"
-              >
-                <span className="material-symbols-outlined">dashboard</span>
-                <span className="font-body-md text-body-md">Dashboard</span>
-              </a>
-              <a
-                href="/upload"
-                className="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 active:scale-[0.98] transition-transform"
-              >
-                <span className="material-symbols-outlined">upload_file</span>
-                <span className="font-body-md text-body-md">Upload</span>
-              </a>
-            </nav>
-
-            {/* Bottom User Info */}
-            <div className="mt-auto px-md pt-md border-t border-outline-variant/50">
-              <div className="flex items-center gap-sm">
-                {user.avatarUrl ? (
-                  <img
-                    alt={user.name}
-                    src={user.avatarUrl}
-                    className="w-8 h-8 rounded-full object-cover border border-outline-variant"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">
-                    {user.name.slice(0, 2).toUpperCase()}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-label-bold text-label-bold text-on-surface truncate">
-                    {user.name}
-                  </p>
-                  <p className="font-label-md text-label-md text-on-surface-variant truncate">
-                    {user.email ?? user.role ?? ''}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+        {sidebar ?? (
+          <SideNavBar
+            onItemClick={closeMobileMenu}
+            onClose={closeMobileMenu}
+            user={user}
+          />
         )}
       </aside>
 
