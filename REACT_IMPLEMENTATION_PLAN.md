@@ -69,7 +69,7 @@ Poniższy plan precyzuje proces budowy interfejsu, mapując poszczególne ekrany
 
 Poniższe kroki opisują implementację konkretnych ścieżek (routes) w aplikacji.
 
-### [ ] Krok 3.1: Ścieżka `/` (Dashboard Overview)
+### ✅ Krok 3.1: Ścieżka `/` (Dashboard Overview) — Ukończono
 *   **Makieta źródłowa (HTML):** `dashboard/code.html`
 *   **Backend API (Wymagany):** Endpointy zwracające zagregowane metryki (Total, Success Rate) oraz listę ostatnich paczek.
 *   **Zadania React:**
@@ -77,6 +77,20 @@ Poniższe kroki opisują implementację konkretnych ścieżek (routes) w aplikac
     *   Implementacja tabeli "Recent Batches".
     *   Zmapowanie statusów z HTML (Processing - sync/spin, Completed - check, Failed - close) na dynamiczne komponenty Badge.
     *   Linki w kolumnie "Batch ID" muszą kierować do ścieżki `/jobs/{batch_id}`.
+*   **Wykonane:**
+    *   Stworzono dedykowany komponent `StatusBadge.tsx` z dynamicznym mapowaniem statusów paczek (`processing` z obracającą się ikoną `sync`, `completed` z ikoną `check`, `failed` z ikoną `close`, `pending`).
+    *   Stworzono komponent `ProgressBar.tsx` z responsywnym wypełnieniem paska, dynamicznym doborem koloru (zielony dla completed, czerwony dla failed, niebieski dla processing) oraz etykietą procentową.
+    *   Stworzono komponent `MetricCard.tsx` odpowiadający specyfikacji Bento Grid z obsługą stanów ładowania (skeleton).
+    *   Utworzono warstwę integracji API `src/services/api.ts` obsługującą pobieranie metryk (`getDashboardMetrics`) i paczek (`getRecentBatches`), z synchronizacją z `localStorage` oraz mechanizmem bezpiecznego fallbacku demonstracyjnego.
+    *   Zaimplementowano pełny widok strony `src/pages/DashboardView.tsx`:
+        *   Nagłówek Overview z licznikiem i przyciskiem filtru (All, Processing, Completed, Failed) oraz szybkim skrótem do Uploadu.
+        *   Bento Grid z 3 kartami metryk: Total Processed (30d), Success Rate (%), Active Batches.
+        *   Kartę "Recent Batches" z tabelą, formatowaniem ID paczek (`formatBatchId`), interaktywnymi linkami do `/jobs/{batch_id}`, badge'ami statusów i paskami postępu.
+        *   Obsługę stanów ładowania (szkielety skeleton), pustego stanu tabeli (Empty State z możliwością wyczyszczenia filtrów lub przejścia do uploadu) oraz działającą paginację.
+        *   Przełącznik widoku skróconego / pełnego ("View All").
+    *   Wyeksportowano nowe komponenty przez `src/components/index.ts`.
+    *   Zintegrowano `DashboardView` w `src/main.tsx` pod ścieżką główną `/` oraz przygotowano trasy placeholderów dla `/jobs/:batchId` i `/result/:batchId`.
+    *   Zweryfikowano kompilację TypeScript oraz produkcyjny build Vite (`npm run build` — 0 błędów).
 
 ### [ ] Krok 3.2: Ścieżka `/upload` (Document Upload)
 *   **Makieta źródłowa (HTML):** `Upload/code.html`

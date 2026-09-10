@@ -4,37 +4,14 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppLayout } from './components';
 import './index.css';
 
+import { DashboardView } from './pages/DashboardView';
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<AppLayout />}>
-          <Route
-            index
-            element={
-              <div className="space-y-md">
-                <div className="flex justify-between items-end mb-xl">
-                  <div>
-                    <h2 className="font-display-lg text-display-lg text-on-surface">Overview</h2>
-                    <p className="font-body-lg text-body-lg text-on-surface-variant mt-xs">
-                      Manage your recent policy processing batches.
-                    </p>
-                  </div>
-                </div>
-                <div className="p-xl border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest text-center py-16">
-                  <span className="material-symbols-outlined text-secondary text-4xl mb-sm block">
-                    dashboard
-                  </span>
-                  <p className="font-headline-sm text-headline-sm text-on-surface">
-                    AppLayout Shell Ready
-                  </p>
-                  <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
-                    Krok 2.1 zrealizowany: Główny kontener z fixowanym paskiem bocznym i scrollowanym obszarem treści.
-                  </p>
-                </div>
-              </div>
-            }
-          />
+          <Route index element={<DashboardView />} />
           <Route
             path="upload"
             element={
@@ -55,7 +32,59 @@ function App() {
                     Upload View Ready
                   </p>
                   <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
-                    Krok 2.2 zrealizowany: Nawigacja SideNavBar z automatycznym podświetlaniem aktywnej sekcji (NavLink).
+                    Krok 3.2 zrealizuje: Przesyłanie plików PDF i przejście do monitorowania paczki.
+                  </p>
+                </div>
+              </div>
+            }
+          />
+          <Route
+            path="jobs/:batchId"
+            element={
+              <div className="space-y-md">
+                <div className="mb-lg">
+                  <h2 className="font-display-lg text-display-lg text-on-surface mb-xs">
+                    Batch Processing Status
+                  </h2>
+                  <p className="font-body-lg text-body-lg text-on-surface-variant">
+                    Monitoring live processing progress for selected batch.
+                  </p>
+                </div>
+                <div className="p-xl border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest text-center py-16">
+                  <span className="material-symbols-outlined text-secondary text-4xl mb-sm block">
+                    sync
+                  </span>
+                  <p className="font-headline-sm text-headline-sm text-on-surface">
+                    Batch Status View
+                  </p>
+                  <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
+                    Krok 3.3: Monitoring postępu przetwarzania paczki (/jobs/:batchId).
+                  </p>
+                </div>
+              </div>
+            }
+          />
+          <Route
+            path="result/:batchId"
+            element={
+              <div className="space-y-md">
+                <div className="mb-lg">
+                  <h2 className="font-display-lg text-display-lg text-on-surface mb-xs">
+                    Batch Results
+                  </h2>
+                  <p className="font-body-lg text-body-lg text-on-surface-variant">
+                    Review extracted policy records and confidence scores.
+                  </p>
+                </div>
+                <div className="p-xl border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest text-center py-16">
+                  <span className="material-symbols-outlined text-secondary text-4xl mb-sm block">
+                    table_chart
+                  </span>
+                  <p className="font-headline-sm text-headline-sm text-on-surface">
+                    Batch Results View
+                  </p>
+                  <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
+                    Krok 3.4: Prezentacja wyników ekstrakcji polis (/result/:batchId).
                   </p>
                 </div>
               </div>
