@@ -110,7 +110,7 @@ Poniższe kroki opisują implementację konkretnych ścieżek (routes) w aplikac
     *   Podpięto `UploadView` w routingu `src/main.tsx` pod ścieżkę `/upload`.
     *   Zaktualizowano `README.md` oraz zweryfikowano bezbłędny build (`npm run build`).
 
-### [ ] Krok 3.3: Ścieżka `/jobs/{batch_id}` (Batch Processing Status)
+### ✅ Krok 3.3: Ścieżka `/jobs/{batch_id}` (Batch Processing Status) — Ukończono
 *   **Makieta źródłowa (HTML):** `Batch_Processing/code.html`
 *   **Backend API:** `GET /jobs/{batch_id}/status` (polling).
 *   **Zadania React:**
@@ -120,6 +120,15 @@ Poniższe kroki opisują implementację konkretnych ścieżek (routes) w aplikac
     *   Implementacja tabeli "Processing Log". Nowe wiersze pojawiają się dynamicznie w miarę przetwarzania.
     *   Implementacja Tooltipa błędu (czarny box z DESIGN) pojawiającego się po najechaniu na ikonę błędu w tabeli.
     *   Przycisk "Batch Results" aktywuje się (zmienia styl z disabled) dopiero, gdy status paczki zmieni się na "completed".
+*   **Wykonane:**
+    *   Stworzono komponent `src/pages/BatchStatusView.tsx` zgodny z makietą `Batch_Processing/code.html`.
+    *   Zaimplementowano mechanizm pollingu (`useEffect` + `setInterval` co 2 sekundy) odpytujący `GET /jobs/{batch_id}/status`, który zatrzymuje się automatycznie po osiągnięciu statusu `completed` lub `failed` albo po odmontowaniu komponentu.
+    *   Zaimplementowano animowany komponent paska postępu z klasą `progress-pulse`, dynamicznym kolorem (niebieski podczas przetwarzania, zielony po sukcesie, czerwony przy błędzie) i estymacją pozostałego czasu.
+    *   Zaimplementowano 4 karty Bento Grid (Total Files, Processed z tłem watermark, Failed w czerwonym kontenerze błędu, Remaining).
+    *   Zaimplementowano tabelę "Processing Log" z indykatorem "Live Updates", obsługą statusów dokumentów oraz tooltipem błędu OCR w formie czarnego boxa (`bg-inverse-surface text-inverse-on-surface`) po najechaniu na ikonę błędu.
+    *   Przycisk "Batch Results" jest zablokowany (`disabled`, przezroczystość 60%, kursor `not-allowed`) w trakcie przetwarzania i aktywuje się z pełnym stylem (`bg-secondary hover:bg-secondary/90`) oraz linkiem do `/result/:batchId` dopiero po statusie `completed`.
+    *   Zaktualizowano serwis `apiService` o obsługę pollingu i pobierania wpisów logów oraz podpięto widok pod `/jobs/:batchId` w `src/main.tsx`.
+    *   Zaktualizowano `README.md` oraz zweryfikowano poprawność kompilacji i buildu Vite.
 
 ### [ ] Krok 3.4: Ścieżka `/result/{batch_id}` (Batch Results)
 *   **Makieta źródłowa (HTML):** `result/code.html`
