@@ -4,15 +4,29 @@ Poniższy plan precyzuje proces budowy interfejsu, mapując poszczególne ekrany
 
 ## 1. Konfiguracja i Fundamenty (Mapowanie Design Systemu)
 
-### Krok 1.1: Konfiguracja Tailwind CSS
+### ✅ Krok 1.1: Konfiguracja Tailwind CSS — Ukończono
 *   **Źródło:** Dane z sekcji `colors`, `typography`, `rounded`, `spacing` w pliku `DESIGN`.
 *   **Zadanie:** Aktualizacja `tailwind.config.js` w celu zdefiniowania customowych kolorów (np. `surface-bright`, `primary-container`), mapowania fontów Inter oraz zdefiniowania skal odstępów i zaokrągleń.
+*   **Wykonane:**
+    *   Stworzono `tailwind.config.js` z pełną paletą kolorów z Design Systemu.
+    *   Zmapowano wszystkie skale `fontSize`, `fontFamily`, `borderRadius`, `spacing`.
+    *   Skonfigurowano pluginy `@tailwindcss/forms` oraz `@tailwindcss/container-queries`.
+    *   Stworzono `postcss.config.js`.
+    *   Zainstalowano wszystkie zależności npm (React, Vite, TypeScript, Tailwind, react-router-dom).
 
-### Krok 1.2: Globalne Style i Ikony
+### ✅ Krok 1.2: Globalne Style i Ikony — Ukończono
 *   **Źródło:** Sekcja `<head>` w dostarczonych plikach HTML.
 *   **Zadanie:** Dodanie importu fontu 'Inter' oraz konfiguracji Material Symbols Outlined do globalnego pliku CSS (`index.css`).
+*   **Wykonane:**
+    *   Stworzono `src/index.css` z dyrektywami `@tailwind base/components/utilities`.
+    *   Dodano import `Inter` (warianty 400–900) przez Google Fonts.
+    *   Dodano import `Material Symbols Outlined` (zmienna oś wght + FILL).
+    *   Zdefiniowano klasę `.material-symbols-outlined` z `font-variation-settings` oraz warianty `.fill` / `.filled` / `[data-weight="fill"]`.
+    *   Przeniesiono animację `.progress-pulse` z makiet do globalnego CSS.
+    *   Stworzono pliki scaffold Vite: `index.html`, `src/main.tsx`, `src/vite-env.d.ts`, `vite.config.ts`, `tsconfig.json`.
+    *   Zweryfikowano poprawność buildu (`vite build` — 0 errors, 0 warnings).
 
-### Krok 1.3: Definicje Typów TS (DTO)
+### [ ] Krok 1.3: Definicje Typów TS (DTO)
 *   **Źródło:** Analiza modeli backendu i danych prezentowanych na makietach.
 *   **Zadanie:** Stworzenie interfejsów TypeScript w `src/types/api.ts` dla obiektów: `Batch`, `PolicyRecord`, `StatsMetrics`.
 
@@ -20,10 +34,10 @@ Poniższy plan precyzuje proces budowy interfejsu, mapując poszczególne ekrany
 
 ## 2. Architektura Komponentów i Układu (Shell)
 
-### Krok 2.1: Komponent `AppLayout` (Główny Szablon)
+### [ ] Krok 2.1: Komponent `AppLayout` (Główny Szablon)
 *   **Zadanie:** Stworzenie głównego kontenera z fixowanym paskiem bocznym po lewej i scrollowanym obszarem treści po prawej.
 
-### Krok 2.2: Komponent `SideNavBar` (Pasek Boczny)
+### [ ] Krok 2.2: Komponent `SideNavBar` (Pasek Boczny)
 *   **Makiety źródłowe (HTML):** `dashboard/code.html`, `Upload/code.html`, `Batch_Processing/code.html`.
 *   **Zadanie:** Implementacja statycznej części nawigacji.
 *   **Integracja:** Użycie `NavLink` z `react-router-dom` do obsługi linków i automatycznego podświetlania aktywnej sekcji (Dashboard / Upload) na podstawie aktualnej ścieżki URL.
@@ -34,7 +48,7 @@ Poniższy plan precyzuje proces budowy interfejsu, mapując poszczególne ekrany
 
 Poniższe kroki opisują implementację konkretnych ścieżek (routes) w aplikacji.
 
-### Krok 3.1: Ścieżka `/` (Dashboard Overview)
+### [ ] Krok 3.1: Ścieżka `/` (Dashboard Overview)
 *   **Makieta źródłowa (HTML):** `dashboard/code.html`
 *   **Backend API (Wymagany):** Endpointy zwracające zagregowane metryki (Total, Success Rate) oraz listę ostatnich paczek.
 *   **Zadania React:**
@@ -43,7 +57,7 @@ Poniższe kroki opisują implementację konkretnych ścieżek (routes) w aplikac
     *   Zmapowanie statusów z HTML (Processing - sync/spin, Completed - check, Failed - close) na dynamiczne komponenty Badge.
     *   Linki w kolumnie "Batch ID" muszą kierować do ścieżki `/jobs/{batch_id}`.
 
-### Krok 3.2: Ścieżka `/upload` (Document Upload)
+### [ ] Krok 3.2: Ścieżka `/upload` (Document Upload)
 *   **Makieta źródłowa (HTML):** `Upload/code.html`
 *   **Backend API:** `POST /upload` (multipart/form-data).
 *   **Zadania React:**
@@ -52,7 +66,7 @@ Poniższe kroki opisują implementację konkretnych ścieżek (routes) w aplikac
     *   Implementacja dynamicznej listy "Selected Files" z możliwością usuwania plików przed wysłaniem.
     *   **Integracja:** Obsługa przycisku "Start Processing". Wysłanie plików przez API, odebranie nowego `batch_id` i przekierowanie na stronę ścieżki `/jobs/{batch_id}`.
 
-### Krok 3.3: Ścieżka `/jobs/{batch_id}` (Batch Processing Status)
+### [ ] Krok 3.3: Ścieżka `/jobs/{batch_id}` (Batch Processing Status)
 *   **Makieta źródłowa (HTML):** `Batch_Processing/code.html`
 *   **Backend API:** `GET /jobs/{batch_id}/status` (polling).
 *   **Zadania React:**
@@ -63,7 +77,7 @@ Poniższe kroki opisują implementację konkretnych ścieżek (routes) w aplikac
     *   Implementacja Tooltipa błędu (czarny box z DESIGN) pojawiającego się po najechaniu na ikonę błędu w tabeli.
     *   Przycisk "Batch Results" aktywuje się (zmienia styl z disabled) dopiero, gdy status paczki zmieni się na "completed".
 
-### Krok 3.4: Ścieżka `/result/{batch_id}` (Batch Results)
+### [ ] Krok 3.4: Ścieżka `/result/{batch_id}` (Batch Results)
 *   **Makieta źródłowa (HTML):** `result/code.html`
 *   **Backend API (Wymagany):** Endpoint zwracający listę wyekstrahowanych rekordów polis (`PolicyRecord`) dla danej paczki.
 *   **Zadania React:**
