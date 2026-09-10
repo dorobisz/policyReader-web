@@ -1,27 +1,48 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AppLayout } from './components';
+import './index.css';
 
 function App() {
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center space-y-md">
-        <h1 className="font-headline-md text-headline-md text-on-surface">
-          BrokerEngine
-        </h1>
-        <p className="text-body-md text-on-surface-variant">
-          Policy Intelligence — Scaffold Ready
-        </p>
-        <span className="material-symbols-outlined text-secondary" style={{ fontSize: '48px' }}>
-          check_circle
-        </span>
-      </div>
-    </div>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<AppLayout />}>
+          <Route
+            index
+            element={
+              <div className="space-y-md">
+                <div className="flex justify-between items-end mb-xl">
+                  <div>
+                    <h2 className="font-display-lg text-display-lg text-on-surface">Overview</h2>
+                    <p className="font-body-lg text-body-lg text-on-surface-variant mt-xs">
+                      Manage your recent policy processing batches.
+                    </p>
+                  </div>
+                </div>
+                <div className="p-xl border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest text-center py-16">
+                  <span className="material-symbols-outlined text-secondary text-4xl mb-sm block">
+                    dashboard
+                  </span>
+                  <p className="font-headline-sm text-headline-sm text-on-surface">
+                    AppLayout Shell Ready
+                  </p>
+                  <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
+                    Krok 2.1 zrealizowany: Główny kontener z fixowanym paskiem bocznym i scrollowanym obszarem treści.
+                  </p>
+                </div>
+              </div>
+            }
+          />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
   </StrictMode>,
-)
+);
