@@ -39,8 +39,16 @@ Poniższy plan precyzuje proces budowy interfejsu, mapując poszczególne ekrany
 
 ## 2. Architektura Komponentów i Układu (Shell)
 
-### [ ] Krok 2.1: Komponent `AppLayout` (Główny Szablon)
+### ✅ Krok 2.1: Komponent `AppLayout` (Główny Szablon) — Ukończono
 *   **Zadanie:** Stworzenie głównego kontenera z fixowanym paskiem bocznym po lewej i scrollowanym obszarem treści po prawej.
+*   **Wykonane:**
+    *   Stworzono komponent `src/components/AppLayout.tsx` definiujący kompletny shell aplikacji.
+    *   Zaimplementowano fixowany panel boczny po lewej stronie (`w-64`, `fixed`, `z-40`) z responsywnym drawerem i tłem z efektem rozmycia (`backdrop-blur-sm`) dla ekranów mobilnych.
+    *   Zaimplementowano sticky nagłówek `TopAppBar` (`h-16`, sticky, `z-10`) z przyciskiem hamburgera dla mobile, identyfikatorem tenanta oraz profilem użytkownika.
+    *   Zaimplementowano scrollowany obszar roboczy (`main`, `flex-1`, `overflow-y-auto`) obsługujący zarówno routing przez `<Outlet />`, jak i przekazywane `children`.
+    *   Wyeksportowano komponent i interfejsy `AppLayoutProps`, `AppLayoutUser` przez `src/components/index.ts`.
+    *   Zintegrowano `BrowserRouter` i `AppLayout` w `src/main.tsx`.
+    *   Zweryfikowano poprawność kompilacji TypeScript i bundle Vite (`npm run build`).
 
 ### [ ] Krok 2.2: Komponent `SideNavBar` (Pasek Boczny)
 *   **Makiety źródłowe (HTML):** `dashboard/code.html`, `Upload/code.html`, `Batch_Processing/code.html`.

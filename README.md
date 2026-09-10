@@ -45,7 +45,8 @@ policyReader-web/
 │   ├── types/
 │   │   └── api.ts             # ✅ Interfejsy TS: Batch, PolicyRecord, StatsMetrics, DTO
 │   ├── components/
-│   │   ├── AppLayout.tsx      # [TODO] Główny szablon z sidebarem
+│   │   ├── index.ts           # ✅ Re-eksporty komponentów i typów
+│   │   ├── AppLayout.tsx      # ✅ Główny szablon (fixowany sidebar, TopAppBar, scrollowany main)
 │   │   └── SideNavBar.tsx     # [TODO] Pasek boczny nawigacji
 │   └── pages/
 │       ├── Dashboard.tsx      # [TODO] Ścieżka /
@@ -72,7 +73,8 @@ policyReader-web/
 | `src/main.tsx` | ✅ Ukończono | Entry point React, import index.css |
 | `src/vite-env.d.ts` | ✅ Ukończono | Deklaracje typów Vite client |
 | `src/types/api.ts` | ✅ Ukończono | DTO FastAPI i modele UI: Batch, PolicyRecord, StatsMetrics, Upload |
-| `AppLayout` | ⏳ Planowany | Główny layout aplikacji |
+| `src/components/AppLayout.tsx` | ✅ Ukończono | Główny layout aplikacji: fixowany sidebar (desktop), drawer (mobile), sticky TopAppBar, scrollowany main (`<Outlet />`) |
+| `src/components/index.ts` | ✅ Ukończono | Centralny punkt eksportu komponentów UI |
 | `SideNavBar` | ⏳ Planowany | Sidebar z NavLink (Dashboard / Upload) |
 | `Dashboard` (`/`) | ⏳ Planowany | Metryki + tabela Recent Batches |
 | `Upload` (`/upload`) | ⏳ Planowany | Drag & Drop + walidacja PDF |
