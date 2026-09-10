@@ -92,7 +92,7 @@ Poniższe kroki opisują implementację konkretnych ścieżek (routes) w aplikac
     *   Zintegrowano `DashboardView` w `src/main.tsx` pod ścieżką główną `/` oraz przygotowano trasy placeholderów dla `/jobs/:batchId` i `/result/:batchId`.
     *   Zweryfikowano kompilację TypeScript oraz produkcyjny build Vite (`npm run build` — 0 błędów).
 
-### [ ] Krok 3.2: Ścieżka `/upload` (Document Upload)
+### ✅ Krok 3.2: Ścieżka `/upload` (Document Upload) — Ukończono
 *   **Makieta źródłowa (HTML):** `Upload/code.html`
 *   **Backend API:** `POST /upload` (multipart/form-data).
 *   **Zadania React:**
@@ -100,6 +100,15 @@ Poniższe kroki opisują implementację konkretnych ścieżek (routes) w aplikac
     *   Walidacja frontendu: akceptacja tylko plików `.pdf`.
     *   Implementacja dynamicznej listy "Selected Files" z możliwością usuwania plików przed wysłaniem.
     *   **Integracja:** Obsługa przycisku "Start Processing". Wysłanie plików przez API, odebranie nowego `batch_id` i przekierowanie na stronę ścieżki `/jobs/{batch_id}`.
+*   **Wykonane:**
+    *   Stworzono komponent `src/pages/UploadView.tsx` w pełni odwzorowujący makietę `Upload/code.html`.
+    *   Zaimplementowano strefę Drag & Drop z obsługą zdarzeń (`onDrop`, `onDragOver`, `onDragEnter`, `onDragLeave`) oraz aktywacją systemowego selektora plików (`input type="file" multiple accept=".pdf"`).
+    *   Zaimplementowano walidację frontendu: weryfikację rozszerzenia / typu MIME (wyłącznie pliki `.pdf`), limitu rozmiaru (maksymalnie 50MB na plik) oraz deduplikację plików, z estetycznym banerem komunikatów błędów.
+    *   Zaimplementowano dynamiczną listę "Selected Files" ze zliczaniem plików, formatowaniem rozmiarów (`formatBytes`), czerwoną ikoną PDF `picture_as_pdf` oraz przyciskami usuwania poszczególnych pozycji i opcją "Clear all".
+    *   Zaimplementowano przycisk "Start Processing" ze stanem ładowania (`animate-spin`), blokadą w trakcie wysyłki oraz integracją z `apiService.uploadPolicies` (POST `/upload` multipart/form-data z obsługą fallbacku).
+    *   Zintegrowano automatyczne przekierowanie `navigate('/jobs/' + batch_id)` po pomyślnym przyjęciu plików do kolejki.
+    *   Podpięto `UploadView` w routingu `src/main.tsx` pod ścieżkę `/upload`.
+    *   Zaktualizowano `README.md` oraz zweryfikowano bezbłędny build (`npm run build`).
 
 ### [ ] Krok 3.3: Ścieżka `/jobs/{batch_id}` (Batch Processing Status)
 *   **Makieta źródłowa (HTML):** `Batch_Processing/code.html`
