@@ -158,8 +158,18 @@ Poniższe kroki opisują implementację konkretnych ścieżek (routes) w aplikac
 
 ---
 
-## 4. Prace Wykończeniowe i Optymalizacja
+## ✅ 4. Prace Wykończeniowe i Optymalizacja — Ukończono
 
-*   **Responsywność:** Weryfikacja działania na urządzeniach mobilnych (ukrywanie Sidebaru, zmiana gridów na 1-kolumnowe).
-*   **Stany Ładowania:** Dodanie komponentów Skeleton Screen w miejscach tabel i metryk podczas oczekiwania na dane z API.
-*   **Obsługa Błędów:** Implementacja Error Boundary dla całych stron oraz globalnego systemu powiadomień (Toast) dla błędów API.
+*   **Responsywność:** ✅ Sidebar desktopowy (w-64) automatycznie chowa się na mobile jako slide-over drawer wyzwalany hamburger-button w TopAppBar (klasy `-translate-x-full md:translate-x-0` w `AppLayout`). Gridy Bento: `grid-cols-1 md:grid-cols-3`. Tabele wynikowe opakowane w `overflow-x-auto` z `min-w-[640px]`, aby poziome scrollowanie działało na wąskich ekranach.
+*   **Stany Ładowania:** ✅ Skeleton Screen zaimplementowany we wszystkich widokach:
+    *   `DashboardView` — MetricCard ze stanem `loading` + skeleton wiersze tabeli.
+    *   `BatchStatusView` — 4 wiersze `animate-pulse` w tabeli Processing Log podczas pierwszego ładowania.
+    *   `BatchResultsView` — 5 wierszy `animate-pulse × 7 kolumn` przed załadowaniem wyników.
+    *   Nagłówki dynamiczne (np. "Processed X of Y") wyświetlają `div animate-pulse` do momentu pobrania danych.
+*   **Obsługa Błędów:** ✅ Zaimplementowane dwa poziomy:
+    *   **`ErrorBoundary`** (`src/components/ErrorBoundary.tsx`) — Class Component wychwytujący błędy renderowania React. Wyświetla widok `Something went wrong` z przyciskiem `Try again` (reset stanu). Owinięty wokół każdego widoku w `main.tsx`.
+    *   **`ToastProvider` + `useToast`** (`src/components/Toast.tsx`) — Globalny system powiadomień z 4 typami (`success`/`error`/`warning`/`info`), animacją wejścia/wyjścia (`translate-x` + `opacity`), auto-hide po 4s (6s dla błędów), max 5 jednoczesnych. Podpięty w `main.tsx` jako korzeń drzewa. Zintegrowany we wszystkich widokach:
+        *   `DashboardView` → `toast.error()` przy błędzie ładowania metryk
+        *   `BatchStatusView` → `toast.error()` przy błędzie pollingu
+        *   `UploadView` → `toast.success()` po udanym uploadzie, `toast.error()` przy błędzie
+        *   `BatchResultsView` → `toast.error()` przy błędzie ładowania wyników

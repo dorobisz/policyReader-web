@@ -90,6 +90,8 @@ policyReader-web/
 | `src/pages/BatchStatusView.tsx` (`/jobs/:id`) | ✅ Ukończono | Polling statusu (/jobs/{id}/status), animowany pasek postępu (progress-pulse), Bento Grid (4 liczniki), tabela Processing Log z tooltipami błędów OCR i warunkowym przyciskiem Batch Results |
 | `src/pages/BatchResultsView.tsx` (`/result/:id`) | ✅ Ukończono | Tabela wyników ekstrakcji polis: Bento-compatible layout, filtry (insurer, status), sortowanie daty, paginacja (5/str.), odznaki HIGH CONF./REVIEW, eksport CSV (API + fallback client-side), przycisk RESOLVE, skeleton loading |
 | `src/services/api.ts` | ✅ Ukończono | Rozszerzono o `getBatchResults()` (10 rek. demo) i `downloadBatchCsv()` (API + CSV client-side fallback) |
+| `src/components/Toast.tsx` | ✅ Ukończono | Globalny system Toast: `ToastProvider` (Context), `useToast()` hook, `ToastContainer` (fixed bottom-right), 4 typy (success/error/warning/info), animacja slide-in, auto-hide |
+| `src/components/ErrorBoundary.tsx` | ✅ Ukończono | React Class Component — Error Boundary dla widoków: widok błędu `Something went wrong` z przyciskiem `Try again` |
 
 ---
 
