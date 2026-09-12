@@ -200,7 +200,7 @@ export const BatchResultsView: React.FC = () => {
       {/* Back to Batch Processing link */}
       <div>
         <Link
-          to={`/batch/${batchId}`}
+          to={`/jobs/${batchId}`}
           className="inline-flex items-center gap-xs text-secondary hover:text-secondary-container font-label-bold text-label-bold transition-colors"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
