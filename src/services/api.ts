@@ -121,7 +121,18 @@ export const apiService = {
   /**
    * Pobiera metryki podsumowujące dla Bento Grid na Dashboardzie
    */
-  async getDashboardMetrics(): Promise<StatsMetrics> {
+  async getDashboardMetrics(tenantId = 'default'): Promise<StatsMetrics> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/stats`, {
+        headers: { 'X-Tenant-ID': tenantId },
+      });
+      if (response.ok) {
+        return (await response.json()) as StatsMetrics;
+      }
+    } catch {
+      // Fallback do pamięci lokalnej
+    }
+
     const batches = getStoredBatches();
     let totalProcessed = 0;
     let totalSuccessful = 0;
@@ -155,8 +166,30 @@ export const apiService = {
     page?: number;
     limit?: number;
     search?: string;
+    tenantId?: string;
   }): Promise<{ batches: Batch[]; total: number }> {
-    const { status, page = 1, limit = 4, search = '' } = params || {};
+    const { status, page = 1, limit = 4, search = '', tenantId = 'default' } = params || {};
+    try {
+      const url = status && status !== 'all' ? `${API_BASE_URL}/batches?status=${status}` : `${API_BASE_URL}/batches`;
+      const response = await fetch(url, {
+        headers: { 'X-Tenant-ID': tenantId },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        let apiBatches: Batch[] = data.batches || [];
+        if (search.trim()) {
+          const q = search.toLowerCase().trim();
+          apiBatches = apiBatches.filter((b) => b.batch_id.toLowerCase().includes(q));
+        }
+        const total = apiBatches.length;
+        const startIndex = (page - 1) * limit;
+        const pagedBatches = apiBatches.slice(startIndex, startIndex + limit);
+        return { batches: pagedBatches, total };
+      }
+    } catch {
+      // Fallback do pamięci lokalnej
+    }
+
     let allBatches = getStoredBatches();
 
     if (status && status !== 'all') {
