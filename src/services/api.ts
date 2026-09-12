@@ -281,7 +281,7 @@ export const apiService = {
   async getBatchLogs(batchId: string, isCompleted = false, tenantId = 'default'): Promise<import('../types/api').BatchProcessingLogItem[]> {
     try {
       const results = await apiService.getBatchResults(batchId, tenantId);
-      if (results && results.records && results.records.length > 0) {
+      if (results && results.records) {
         return results.records.map((r, index) => ({
           id: r.id || `log-${index}-${batchId}`,
           filename: r.filename,
@@ -296,41 +296,7 @@ export const apiService = {
       // Fallback
     }
 
-    return [
-      {
-        id: `log-1-${batchId}`,
-        filename: 'Acme_Corp_General_Liability_2023.pdf',
-        document_type: 'General Liability',
-        file_size: '2.4 MB',
-        status: isCompleted ? 'success' : 'pending',
-        ocr_used: false,
-      },
-      {
-        id: `log-2-${batchId}`,
-        filename: 'Stark_Ind_Workers_Comp_Q3.pdf',
-        document_type: 'Workers Comp',
-        file_size: '1.1 MB',
-        status: 'failed',
-        error_message: 'OCR Failure: Unreadable text block detected on page 3. Requires manual review.',
-        ocr_used: true,
-      },
-      {
-        id: `log-3-${batchId}`,
-        filename: 'Wayne_Ent_Cyber_Risk_Ren.pdf',
-        document_type: 'Cyber Liability',
-        file_size: '845 KB',
-        status: 'success',
-        ocr_used: true,
-      },
-      {
-        id: `log-4-${batchId}`,
-        filename: 'Globex_Property_Master.pdf',
-        document_type: 'Commercial Property',
-        file_size: '5.6 MB',
-        status: 'success',
-        ocr_used: false,
-      },
-    ];
+    return [];
   },
 
   /**
