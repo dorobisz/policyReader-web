@@ -73,6 +73,7 @@ export interface PolicyRecordResponse {
   ocr_used: boolean;
   czas_procesu_sek: number | null;
   error_message: string | null;
+  file_size?: string | null;
   created_at: string | null;
 }
 

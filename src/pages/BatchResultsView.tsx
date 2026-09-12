@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useToast } from "../components/Toast";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { apiService } from "../services/api";
 import { PolicyRecordResponse } from "../types/api";
 
@@ -8,9 +8,10 @@ const PAGE_SIZE = 5;
 
 function formatAmount(value: string | null | undefined): string {
   if (!value) return "—";
-  const num = parseFloat(value);
-  if (isNaN(num)) return "—";
-  return num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const normalized = value.replace(",", ".");
+  const num = parseFloat(normalized);
+  if (isNaN(num)) return value;
+  return num.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatDate(iso: string | null | undefined): string {
@@ -61,7 +62,7 @@ const ResultRow: React.FC<{ record: PolicyRecordResponse }> = ({ record }) => {
       </td>
       <td className="py-3 px-md text-on-surface font-body-sm text-body-sm">{record.towarzystwo ?? "—"}</td>
       <td className="py-3 px-md text-right font-medium text-on-surface font-body-sm text-body-sm">{formatAmount(record.kwota_skladki)}</td>
-      <td className="py-3 px-md text-center text-on-surface-variant font-body-sm text-body-sm">{record.kwota_skladki ? "USD" : "—"}</td>
+      <td className="py-3 px-md text-center text-on-surface-variant font-body-sm text-body-sm">{record.kwota_skladki ? "PLN" : "—"}</td>
       <td className="py-3 px-md text-on-surface-variant font-body-sm text-body-sm">{formatDate(record.created_at)}</td>
       <td className="py-3 px-md text-center"><ConfidenceBadge status={record.status ?? "failed"} /></td>
       <td className="py-3 px-md text-right">
@@ -196,6 +197,16 @@ export const BatchResultsView: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-xl">
+      {/* Back to Batch Processing link */}
+      <div>
+        <Link
+          to={`/batch/${batchId}`}
+          className="inline-flex items-center gap-xs text-secondary hover:text-secondary-container font-label-bold text-label-bold transition-colors"
+        >
+          <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+          <span>Wróć do postępu paczki (Batch Processing)</span>
+        </Link>
+      </div>
 
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-md">
