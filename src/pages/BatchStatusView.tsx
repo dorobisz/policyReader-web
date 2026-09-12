@@ -328,7 +328,7 @@ export const BatchStatusView: React.FC = () => {
                         )}
                         {!isItemSuccess && !isItemFailed && (
                           <span className="inline-flex items-center space-x-xs px-2 py-1 rounded-md bg-secondary/10 text-secondary font-label-bold text-label-bold">
-                            <span className="material-symbols-outlined text-[10px] progress-pulse">
+                            <span className="material-symbols-outlined text-[10px] animate-spin">
                               sync
                             </span>
                             <span>Processing</span>
