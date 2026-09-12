@@ -130,7 +130,7 @@ Poniższe kroki opisują implementację konkretnych ścieżek (routes) w aplikac
     *   Zaktualizowano serwis `apiService` o obsługę pollingu i pobierania wpisów logów oraz podpięto widok pod `/jobs/:batchId` w `src/main.tsx`.
     *   Zaktualizowano `README.md` oraz zweryfikowano poprawność kompilacji i buildu Vite.
 
-### [ ] Krok 3.4: Ścieżka `/result/{batch_id}` (Batch Results)
+### ✅ Krok 3.4: Ścieżka `/result/{batch_id}` (Batch Results) — Ukończono
 *   **Makieta źródłowa (HTML):** `result/code.html`
 *   **Backend API (Wymagany):** Endpoint zwracający listę wyekstrahowanych rekordów polis (`PolicyRecord`) dla danej paczki.
 *   **Zadania React:**
@@ -138,6 +138,23 @@ Poniższe kroki opisują implementację konkretnych ścieżek (routes) w aplikac
     *   Obsługa statusów konfidencyjności (HIGH CONF. / REVIEW) z odpowiednimi kolorami.
     *   Implementacja frontendu filtrów (Dropdowny w górnym pasku).
     *   Implementacja logiki dla przycisków: "Export to CSV" (pobranie pliku), "RESOLVE" (kieruje do edytora - brak makiety edytora).
+*   **Wykonane:**
+    *   Stworzono komponent `src/pages/BatchResultsView.tsx` zgodny z makietą `result/code.html`.
+    *   Zaimplementowano pełną tabelę wyników z kolumnami: Filename, Insurer Name, Premium Amount, Currency, Extraction Date, Status, Action.
+    *   Zaimplementowano odznaki konfidencyjności: `HIGH CONF.` (zielona, `bg-[#e6f4ea] text-[#137333]`) dla statusu `success` oraz `REVIEW` (żółta, `bg-[#fef7e0] text-[#b06000]`) dla statusu `failed`. Wiersze `REVIEW` posiadają tło `bg-error-container/20`.
+    *   Zaimplementowano funkcjonalne dropdowny filtrów: po towarzystwo (dynamicznie generowany z danych) i po statusie. Dodano licznik aktywnych wyników i przycisk "Clear Filters".
+    *   Zaimplementowano sortowanie po dacie ekstrakcji (asc/desc) z przełączaną ikoną strzałki w nagłówku kolumny Filename.
+    *   Zaimplementowano paginację po stronie klienta (5 rekordów na stronę) ze smart-generowanymi numerami stron i informacją "Showing X to Y of Z results".
+    *   Przycisk "Export to CSV" wywołuje `apiService.downloadBatchCsv()` — próbuje `GET /jobs/{id}/export/csv`, a w trybie fallback generuje CSV (BOM + średnikowy) po stronie klienta ze stanu `filtered`.
+    *   Przycisk "RESOLVE" dostępny tylko dla wierszy `REVIEW` — wyświetla alert z komunikatem błędu ekstrakcji.
+    *   Skeleton loading (5 wierszy `animate-pulse`) widoczny podczas ładowania danych.
+    *   Stan pustego filtra — widok informacyjny z ikoną `search_off` i przyciskiem czyszczenia filtrów.
+    *   Nagłówek strony zawiera: liczbę przetworzonych / całkowitych plików, Batch ID oraz obliczony % konfidencji.
+    *   Rozszerzono `apiService.getBatchResults()` o bogate dane demonstracyjne (10 rekordów, 2× REVIEW) na wzór makiety.
+    *   Dodano metodę `apiService.downloadBatchCsv()` z pełną obsługą API + fallback CSV client-side.
+    *   Podpięto widok pod `/result/:batchId` w `src/main.tsx` (zastąpiono placeholder).
+    *   Zaktualizowano `README.md` oraz zweryfikowano poprawność kompilacji i buildu Vite (34 moduły, 0 błędów).
+
 
 ---
 

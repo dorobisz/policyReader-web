@@ -57,7 +57,7 @@ policyReader-web/
 │       ├── DashboardView.tsx    # ✅ Ścieżka / (Overview, Bento Grid, Recent Batches)
 │       ├── UploadView.tsx       # ✅ Ścieżka /upload (Drag & Drop, walidacja PDF, Start Processing)
 │       ├── BatchStatusView.tsx  # ✅ Ścieżka /jobs/:batchId (Polling, progress-pulse, Bento Grid, logi, tooltipy)
-│       └── BatchResults.tsx     # [TODO] Ścieżka /result/:batch_id
+│       └── BatchResultsView.tsx  # ✅ Ścieżka /result/:batchId (Tabela wyników, filtry, paginacja, eksport CSV)
 ├── screen_mockups/              # Makiety HTML Design Systemu
 ├── REACT_IMPLEMENTATION_PLAN.md
 └── .agents/rules/global_directive.md
@@ -88,7 +88,8 @@ policyReader-web/
 | `src/pages/DashboardView.tsx` (`/`) | ✅ Ukończono | Widok Overview: Bento Grid (3 metryki), filtrowalna tabela Recent Batches z paginacją i linkami do `/jobs/{id}` |
 | `src/pages/UploadView.tsx` (`/upload`) | ✅ Ukończono | Strefa Drag & Drop, walidacja plików PDF (max 50MB), lista Selected Files, wysyłka POST /upload i przekierowanie |
 | `src/pages/BatchStatusView.tsx` (`/jobs/:id`) | ✅ Ukończono | Polling statusu (/jobs/{id}/status), animowany pasek postępu (progress-pulse), Bento Grid (4 liczniki), tabela Processing Log z tooltipami błędów OCR i warunkowym przyciskiem Batch Results |
-| `BatchResults` (`/result/:id`) | ⏳ Planowany | Tabela wyników, eksport CSV |
+| `src/pages/BatchResultsView.tsx` (`/result/:id`) | ✅ Ukończono | Tabela wyników ekstrakcji polis: Bento-compatible layout, filtry (insurer, status), sortowanie daty, paginacja (5/str.), odznaki HIGH CONF./REVIEW, eksport CSV (API + fallback client-side), przycisk RESOLVE, skeleton loading |
+| `src/services/api.ts` | ✅ Ukończono | Rozszerzono o `getBatchResults()` (10 rek. demo) i `downloadBatchCsv()` (API + CSV client-side fallback) |
 
 ---
 
