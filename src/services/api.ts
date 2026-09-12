@@ -6,7 +6,7 @@ import {
   StatsMetrics,
 } from '../types/api';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1/policies';
 const LOCAL_STORAGE_BATCHES_KEY = 'brokerengine_saved_batches';
 
 const INITIAL_MOCK_BATCHES: Batch[] = [
