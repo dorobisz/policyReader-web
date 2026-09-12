@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useToast } from '../components/Toast';
 import { Link } from 'react-router-dom';
 import { Batch, StatsMetrics } from '../types/api';
 import { apiService } from '../services/api';
@@ -16,6 +17,7 @@ function formatBatchId(id: string): string {
 }
 
 export const DashboardView: React.FC = () => {
+  const toast = useToast();
   const [metrics, setMetrics] = useState<StatsMetrics>({
     total_processed_30d: 1248,
     success_rate: 98.2,
@@ -47,6 +49,7 @@ export const DashboardView: React.FC = () => {
       setTotalBatches(batchesData.total);
     } catch (err) {
       console.error('Błąd ładowania danych dashboardu:', err);
+      toast.error('Failed to load dashboard data', 'Using cached data instead.');
     } finally {
       setLoading(false);
     }

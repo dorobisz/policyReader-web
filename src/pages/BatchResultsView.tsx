@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useToast } from "../components/Toast";
 import { useParams } from "react-router-dom";
 import { apiService } from "../services/api";
 import { PolicyRecordResponse } from "../types/api";
@@ -133,6 +134,7 @@ const Pagination: React.FC<{ page: number; totalPages: number; totalCount: numbe
 
 export const BatchResultsView: React.FC = () => {
   const { batchId = "default" } = useParams<{ batchId: string }>();
+  const toast = useToast();
   const [allRecords, setAllRecords] = useState<PolicyRecordResponse[]>([]);
   const [totalFiles, setTotalFiles] = useState(0);
   const [processedFiles, setProcessedFiles] = useState(0);
@@ -150,7 +152,7 @@ export const BatchResultsView: React.FC = () => {
         setAllRecords(data.records ?? []);
         setTotalFiles(data.total_files ?? 0);
         setProcessedFiles(data.processed_files ?? 0);
-      } catch (err) { console.error("Error loading results:", err); }
+      } catch (err) { console.error("Error loading results:", err); toast.error("Failed to load results", "Using demo data."); }
       finally { setLoading(false); }
     };
     load();

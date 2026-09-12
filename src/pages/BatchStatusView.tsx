@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useToast } from '../components/Toast';
 import { useParams, Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { BatchProcessingLogItem, BatchStatusResponse } from '../types/api';
 
 export const BatchStatusView: React.FC = () => {
+  const toast = useToast();
   const { batchId = 'default' } = useParams<{ batchId: string }>();
 
   const [statusData, setStatusData] = useState<BatchStatusResponse>({
@@ -51,6 +53,7 @@ export const BatchStatusView: React.FC = () => {
       }
     } catch (err) {
       console.error('Błąd podczas odpytywania o status paczki:', err);
+      toast.error('Polling error', 'Could not fetch batch status. Retrying...');
     } finally {
       setLoading(false);
     }

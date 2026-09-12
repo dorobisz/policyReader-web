@@ -8,3 +8,6 @@ export { ProgressBar } from './ProgressBar';
 export type { ProgressBarProps } from './ProgressBar';
 export { MetricCard } from './MetricCard';
 export type { MetricCardProps } from './MetricCard';
+export { ToastProvider, ToastContainer, useToast } from './Toast';
+export type { Toast, ToastType } from './Toast';
+export { ErrorBoundary } from './ErrorBoundary';

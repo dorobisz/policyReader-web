@@ -1,4 +1,5 @@
 import React, { useState, useRef, DragEvent, ChangeEvent } from 'react';
+import { useToast } from '../components/Toast';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { UploadSelectedFile } from '../types/api';
@@ -20,6 +21,7 @@ function formatBytes(bytes: number, decimals = 1): string {
 export const UploadView: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const toast = useToast();
 
   const [selectedFiles, setSelectedFiles] = useState<UploadSelectedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -139,6 +141,7 @@ export const UploadView: React.FC = () => {
       const response = await apiService.uploadPolicies(filesToSend);
 
       if (response && response.batch_id) {
+        toast.success("Upload successful!", `Processing ${selectedFiles.length} file(s) — Batch #${response.batch_id}`);
         navigate(`/jobs/${response.batch_id}`);
       } else {
         throw new Error('Nie otrzymano identyfikatora paczki (batch_id) z serwera.');
@@ -147,6 +150,7 @@ export const UploadView: React.FC = () => {
       console.error('Błąd podczas uploadu polis:', err);
       const msg =
         err instanceof Error ? err.message : 'Wystąpił nieoczekiwany błąd podczas przesyłania plików.';
+      toast.error("Upload failed", msg);
       setErrorMessage(msg);
       setIsUploading(false);
     }
