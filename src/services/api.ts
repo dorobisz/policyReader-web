@@ -285,30 +285,213 @@ export const apiService = {
 
   /**
    * Pobiera wyekstrahowane rekordy polis dla paczki (GET /jobs/{batch_id}/results)
+   * Zwraca dane z backendu lub bogate dane demonstracyjne w trybie fallback.
    */
   async getBatchResults(batchId: string, tenantId = 'default'): Promise<BatchResultsResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/jobs/${batchId}/results`, {
-        headers: {
-          'X-Tenant-ID': tenantId,
-        },
+        headers: { 'X-Tenant-ID': tenantId },
       });
       if (response.ok) {
         return (await response.json()) as BatchResultsResponse;
       }
     } catch {
-      // Fallback
+      // Fallback do danych demonstracyjnych
     }
 
+    // Bogate dane demonstracyjne odwzorowujące makietę result/code.html
     return {
       batch_id: batchId,
       tenant_id: tenantId,
       status: 'completed',
-      total_files: 1,
-      processed_files: 1,
-      failed_files: 0,
-      records: [],
+      total_files: 145,
+      processed_files: 143,
+      failed_files: 2,
+      records: [
+        {
+          id: `rec-1-${batchId}`,
+          batch_id: batchId,
+          tenant_id: tenantId,
+          filename: 'Zurich_Liability_2023_Q4.pdf',
+          towarzystwo: 'Zurich North America',
+          kwota_skladki: '124500.00',
+          status: 'success',
+          ocr_used: false,
+          czas_procesu_sek: 1.2,
+          error_message: null,
+          created_at: '2023-10-24T14:32:00',
+        },
+        {
+          id: `rec-2-${batchId}`,
+          batch_id: batchId,
+          tenant_id: tenantId,
+          filename: 'Chubb_Property_Renew_FINAL.pdf',
+          towarzystwo: 'Chubb Group',
+          kwota_skladki: '89250.50',
+          status: 'success',
+          ocr_used: false,
+          czas_procesu_sek: 0.9,
+          error_message: null,
+          created_at: '2023-10-24T14:31:00',
+        },
+        {
+          id: `rec-3-${batchId}`,
+          batch_id: batchId,
+          tenant_id: tenantId,
+          filename: 'AIG_Umbrella_Draft_v2.docx',
+          towarzystwo: 'AIG',
+          kwota_skladki: null,
+          status: 'failed',
+          ocr_used: true,
+          czas_procesu_sek: 4.7,
+          error_message: 'Extraction failed: unable to parse premium amount from scanned document.',
+          created_at: '2023-10-24T14:30:00',
+        },
+        {
+          id: `rec-4-${batchId}`,
+          batch_id: batchId,
+          tenant_id: tenantId,
+          filename: 'Travelers_Auto_Fleet_List.pdf',
+          towarzystwo: 'Travelers',
+          kwota_skladki: '15700.00',
+          status: 'success',
+          ocr_used: false,
+          czas_procesu_sek: 0.7,
+          error_message: null,
+          created_at: '2023-10-24T14:28:00',
+        },
+        {
+          id: `rec-5-${batchId}`,
+          batch_id: batchId,
+          tenant_id: tenantId,
+          filename: 'Zurich_WC_Addendum.pdf',
+          towarzystwo: 'Zurich North America',
+          kwota_skladki: '4200.00',
+          status: 'success',
+          ocr_used: false,
+          czas_procesu_sek: 0.5,
+          error_message: null,
+          created_at: '2023-10-24T14:25:00',
+        },
+        {
+          id: `rec-6-${batchId}`,
+          batch_id: batchId,
+          tenant_id: tenantId,
+          filename: 'Hartford_GL_Policy_2023.pdf',
+          towarzystwo: 'The Hartford',
+          kwota_skladki: '52300.00',
+          status: 'success',
+          ocr_used: false,
+          czas_procesu_sek: 1.1,
+          error_message: null,
+          created_at: '2023-10-24T14:22:00',
+        },
+        {
+          id: `rec-7-${batchId}`,
+          batch_id: batchId,
+          tenant_id: tenantId,
+          filename: 'Liberty_Mutual_BOP_Q4.pdf',
+          towarzystwo: 'Liberty Mutual',
+          kwota_skladki: '31800.00',
+          status: 'success',
+          ocr_used: true,
+          czas_procesu_sek: 2.3,
+          error_message: null,
+          created_at: '2023-10-24T14:18:00',
+        },
+        {
+          id: `rec-8-${batchId}`,
+          batch_id: batchId,
+          tenant_id: tenantId,
+          filename: 'AIG_Directors_Officers.pdf',
+          towarzystwo: 'AIG',
+          kwota_skladki: null,
+          status: 'failed',
+          ocr_used: true,
+          czas_procesu_sek: 5.9,
+          error_message: 'OCR confidence too low: document quality insufficient for automated extraction.',
+          created_at: '2023-10-24T14:15:00',
+        },
+        {
+          id: `rec-9-${batchId}`,
+          batch_id: batchId,
+          tenant_id: tenantId,
+          filename: 'Nationwide_Property_Bundle.pdf',
+          towarzystwo: 'Nationwide',
+          kwota_skladki: '18500.00',
+          status: 'success',
+          ocr_used: false,
+          czas_procesu_sek: 0.8,
+          error_message: null,
+          created_at: '2023-10-24T14:10:00',
+        },
+        {
+          id: `rec-10-${batchId}`,
+          batch_id: batchId,
+          tenant_id: tenantId,
+          filename: 'Chubb_Cyber_Risk_2024.pdf',
+          towarzystwo: 'Chubb Group',
+          kwota_skladki: '275000.00',
+          status: 'success',
+          ocr_used: false,
+          czas_procesu_sek: 1.4,
+          error_message: null,
+          created_at: '2023-10-24T14:05:00',
+        },
+      ],
     };
+  },
+
+  /**
+   * Pobiera plik CSV z wynikami paczki (GET /jobs/{batch_id}/export/csv)
+   * i uruchamia pobieranie w przeglądarce.
+   */
+  async downloadBatchCsv(batchId: string, tenantId = 'default', records?: import('../types/api').PolicyRecordResponse[]): Promise<void> {
+    // Próba pobrania z prawdziwego API
+    try {
+      const response = await fetch(`${API_BASE_URL}/jobs/${batchId}/export/csv`, {
+        headers: { 'X-Tenant-ID': tenantId },
+      });
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `batch_${batchId}_results.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return;
+      }
+    } catch {
+      // Fallback — generowanie CSV po stronie klienta
+    }
+
+    // Fallback: generowanie CSV z przekazanych lub demonstracyjnych danych
+    const data = records ?? (await apiService.getBatchResults(batchId, tenantId)).records;
+    const BOM = '\uFEFF';
+    const header = 'nazwa_pliku;towarzystwo;kwota_skladki;status_przetwarzania;ocr_used;czas_procesu_sek;error_message';
+    const rows = data.map((r) => [
+      r.filename ?? '',
+      r.towarzystwo ?? '',
+      r.kwota_skladki ?? '',
+      r.status ?? '',
+      r.ocr_used ? 'TAK' : 'NIE',
+      r.czas_procesu_sek != null ? String(r.czas_procesu_sek).replace('.', ',') : '',
+      r.error_message ?? '',
+    ].join(';'));
+
+    const csvContent = BOM + [header, ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `batch_${batchId}_results.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   },
 
   /**

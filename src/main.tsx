@@ -1,4 +1,4 @@
-import { StrictMode } from 'react';
+﻿import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppLayout } from './components';
@@ -7,6 +7,7 @@ import './index.css';
 import { DashboardView } from './pages/DashboardView';
 import { UploadView } from './pages/UploadView';
 import { BatchStatusView } from './pages/BatchStatusView';
+import { BatchResultsView } from './pages/BatchResultsView';
 
 function App() {
   return (
@@ -16,32 +17,7 @@ function App() {
           <Route index element={<DashboardView />} />
           <Route path="upload" element={<UploadView />} />
           <Route path="jobs/:batchId" element={<BatchStatusView />} />
-          <Route
-            path="result/:batchId"
-            element={
-              <div className="space-y-md">
-                <div className="mb-lg">
-                  <h2 className="font-display-lg text-display-lg text-on-surface mb-xs">
-                    Batch Results
-                  </h2>
-                  <p className="font-body-lg text-body-lg text-on-surface-variant">
-                    Review extracted policy records and confidence scores.
-                  </p>
-                </div>
-                <div className="p-xl border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest text-center py-16">
-                  <span className="material-symbols-outlined text-secondary text-4xl mb-sm block">
-                    table_chart
-                  </span>
-                  <p className="font-headline-sm text-headline-sm text-on-surface">
-                    Batch Results View
-                  </p>
-                  <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
-                    Krok 3.4: Prezentacja wyników ekstrakcji polis (/result/:batchId).
-                  </p>
-                </div>
-              </div>
-            }
-          />
+          <Route path="result/:batchId" element={<BatchResultsView />} />
         </Route>
       </Routes>
     </BrowserRouter>
