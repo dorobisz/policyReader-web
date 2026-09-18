@@ -45,6 +45,18 @@ export interface BatchErrorDetail {
   error_message: string;
 }
 
+export type DocumentPhase = 'queued' | 'ocr' | 'llm_inference' | 'parsing' | 'success' | 'failed';
+
+export interface DocumentPhaseInfo {
+  record_id: string;
+  filename: string;
+  current_phase: DocumentPhase;
+  progress_message: string | null;
+  ocr_duration_ms: number | null;
+  llm_duration_ms: number | null;
+  retry_count: number;
+}
+
 /**
  * Odpowiedź endpointu GET /jobs/{batch_id}/status (monitoring postępu paczki).
  */
@@ -57,6 +69,12 @@ export interface BatchStatusResponse {
   remaining_files: number;
   progress_percentage: number;
   errors: BatchErrorDetail[];
+  started_at?: string | null;
+  completed_at?: string | null;
+  elapsed_seconds?: number | null;
+  estimated_remaining_seconds?: number | null;
+  avg_document_duration_ms?: number | null;
+  currently_processing?: DocumentPhaseInfo[];
 }
 
 /**

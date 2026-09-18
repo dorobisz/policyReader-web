@@ -98,6 +98,11 @@ export const BatchStatusView: React.FC = () => {
             <h2 className="font-display-lg text-display-lg text-on-surface">Batch Processing</h2>
             <p className="font-body-md text-body-md text-on-surface-variant mt-sm">
               Batch ID: #{batchId} &nbsp;•&nbsp; Started: 10:42 AM
+              {statusData.elapsed_seconds != null && !isCompleted && !isFailed && (
+                <span className="font-body-sm text-body-sm text-on-surface-variant ml-2">
+                  ({Math.floor(statusData.elapsed_seconds / 60)}:{String(statusData.elapsed_seconds % 60).padStart(2, '0')} elapsed)
+                </span>
+              )}
             </p>
           </div>
 
@@ -154,13 +159,15 @@ export const BatchStatusView: React.FC = () => {
             />
           </div>
 
-          <p className="font-body-sm text-body-sm text-on-surface-variant text-right">
-            {isCompleted
-              ? 'All documents processed successfully'
-              : isFailed
-              ? 'Processing halted with errors'
-              : `Estimated time remaining: ${Math.max(1, statusData.remaining_files * 15)}s`}
-          </p>
+          {!isCompleted && !isFailed && (
+            <p className="font-body-sm text-body-sm text-on-surface-variant text-right">
+              {statusData.estimated_remaining_seconds != null
+                ? `Szacowany czas: ~${Math.ceil(statusData.estimated_remaining_seconds / 60)} min`
+                : statusData.elapsed_seconds != null
+                ? `Upłynęło: ${Math.floor(statusData.elapsed_seconds / 60)} min ${statusData.elapsed_seconds % 60} s`
+                : `Estimated time remaining: ${Math.max(1, statusData.remaining_files * 15)}s`}
+            </p>
+          )}
         </div>
       </section>
 
@@ -213,6 +220,52 @@ export const BatchStatusView: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Aktualnie przetwarzane dokumenty */}
+      {statusData.currently_processing && statusData.currently_processing.length > 0 && !isCompleted && !isFailed && (
+        <section className="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm space-y-md">
+          <div className="flex items-center space-x-sm">
+            <span className="material-symbols-outlined text-secondary text-lg animate-spin">sync</span>
+            <h3 className="font-headline-sm text-headline-sm text-on-surface">Aktualnie przetwarzane</h3>
+          </div>
+          <div className="space-y-sm">
+            {statusData.currently_processing.map((doc) => {
+              const phaseLabels: Record<string, { label: string; icon: string }> = {
+                ocr: { label: 'Ekstrakcja tekstu', icon: 'text_snippet' },
+                llm_inference: { label: 'Analiza AI', icon: 'smart_toy' },
+                parsing: { label: 'Walidacja wyników', icon: 'verified' },
+              };
+              const phaseInfo = phaseLabels[doc.current_phase] || { label: doc.current_phase, icon: 'pending' };
+
+              return (
+                <div
+                  key={doc.record_id}
+                  className="flex items-center justify-between p-sm bg-surface-container-low rounded-lg"
+                >
+                  <div className="flex items-center space-x-sm min-w-0">
+                    <span className="material-symbols-outlined text-secondary text-base shrink-0">
+                      {phaseInfo.icon}
+                    </span>
+                    <span className="font-body-sm text-body-sm text-on-surface truncate max-w-[200px] sm:max-w-xs" title={doc.filename}>
+                      {doc.filename}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-sm shrink-0">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-secondary/10 text-secondary font-label-bold text-[11px]">
+                      {phaseInfo.label}
+                    </span>
+                    {doc.retry_count > 0 && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-warning-container/30 text-on-surface-variant font-label-bold text-[10px]">
+                        Retry {doc.retry_count}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Tabela logów przetwarzania (Processing Log Table) */}
       <section className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col">

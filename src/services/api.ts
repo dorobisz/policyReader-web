@@ -260,6 +260,7 @@ export const apiService = {
             error_message: 'OCR Failure: Unreadable text block detected on page 3. Requires manual review.',
           },
         ] : [],
+        currently_processing: [],
       };
     }
 
@@ -272,13 +273,14 @@ export const apiService = {
       remaining_files: 0,
       progress_percentage: 100,
       errors: [],
+      currently_processing: [],
     };
   },
 
   /**
    * Pobiera listę logów przetwarzania plików w danej paczce na podstawie bazy danych
    */
-  async getBatchLogs(batchId: string, isCompleted = false, tenantId = 'default'): Promise<import('../types/api').BatchProcessingLogItem[]> {
+  async getBatchLogs(batchId: string, _isCompleted = false, tenantId = 'default'): Promise<import('../types/api').BatchProcessingLogItem[]> {
     try {
       const results = await apiService.getBatchResults(batchId, tenantId);
       if (results && results.records) {
@@ -287,7 +289,7 @@ export const apiService = {
           filename: r.filename,
           document_type: r.towarzystwo || 'Policy Document',
           file_size: r.file_size || 'PDF',
-          status: r.status === 'failed' ? 'failed' : r.status === 'success' ? 'success' : 'processing',
+          status: (r.status === 'failed' ? 'failed' : r.status === 'success' ? 'success' : 'pending') as import('../types/api').PolicyRecordStatus,
           error_message: r.error_message || undefined,
           ocr_used: r.ocr_used || false,
         }));
