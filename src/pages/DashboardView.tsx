@@ -80,6 +80,20 @@ export const DashboardView: React.FC = () => {
     }
   };
 
+  const handleDeleteBatch = async (batchId: string) => {
+    if (!window.confirm(`Czy na pewno chcesz usunąć paczkę #${batchId}?`)) {
+      return;
+    }
+    try {
+      await apiService.deleteBatch(batchId);
+      toast.success('Paczka usunięta', `Paczka #${batchId} została pomyślnie usunięta.`);
+      loadData();
+    } catch (err: any) {
+      console.error('Błąd usuwania paczki:', err);
+      toast.error('Błąd usuwania', err?.message || 'Nie udało się usunąć paczki.');
+    }
+  };
+
   return (
     <div className="space-y-xl max-w-7xl mx-auto">
       {/* Page Header */}
@@ -264,8 +278,8 @@ export const DashboardView: React.FC = () => {
                 <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant w-[25%]">
                   Progress
                 </th>
-                <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant w-[15%] text-right">
-                  Total Files
+                <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant w-[10%] text-right">
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -290,11 +304,14 @@ export const DashboardView: React.FC = () => {
                     <td className="py-sm px-md text-right">
                       <div className="h-4 bg-surface-container rounded w-8 ml-auto" />
                     </td>
+                    <td className="py-sm px-md text-right">
+                      <div className="h-5 bg-surface-container rounded w-6 ml-auto" />
+                    </td>
                   </tr>
                 ))
               ) : batches.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-xl text-center text-on-surface-variant">
+                  <td colSpan={6} className="py-xl text-center text-on-surface-variant">
                     <span className="material-symbols-outlined text-4xl block mb-sm text-outline">
                       inbox
                     </span>
@@ -373,6 +390,19 @@ export const DashboardView: React.FC = () => {
                       {/* Kolumna Total Files */}
                       <td className="py-sm px-md font-body-md text-body-md text-on-surface text-right font-medium">
                         {batch.total_files}
+                      </td>
+
+                      {/* Kolumna Actions */}
+                      <td className="py-sm px-md text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteBatch(batch.batch_id)}
+                          className="p-1.5 rounded-lg text-on-surface-variant hover:text-error hover:bg-error/10 transition-colors cursor-pointer"
+                          title="Usuń paczkę"
+                          aria-label="Usuń paczkę"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
                       </td>
                     </tr>
                   );

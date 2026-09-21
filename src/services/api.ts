@@ -600,4 +600,51 @@ export const apiService = {
       message: `Pomyślnie przyjęto ${files.length} plików do kolejki przetwarzania.`,
     };
   },
+
+  /**
+   * Ręczne usunięcie całej paczki zadań (DELETE /jobs/{batch_id})
+   */
+  async deleteBatch(batchId: string, tenantId = 'default'): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/jobs/${batchId}`, {
+        method: 'DELETE',
+        headers: {
+          'X-Tenant-ID': tenantId,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Nie udało się usunąć paczki.');
+      }
+    } catch (err) {
+      console.warn('Błąd API podczas usuwania paczki, czyszczenie fallback:', err);
+    }
+
+    // Usuń także z pamięci lokalnej fallbacku
+    try {
+      const batches = getStoredBatches();
+      const updated = batches.filter((b) => b.batch_id !== batchId);
+      localStorage.setItem(LOCAL_STORAGE_BATCHES_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Błąd czyszczenia paczki z localStorage:', e);
+    }
+  },
+
+  /**
+   * Ręczne usunięcie pojedynczego dokumentu z paczki (DELETE /jobs/{batch_id}/records/{record_id})
+   */
+  async deleteBatchRecord(batchId: string, recordId: string, tenantId = 'default'): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/jobs/${batchId}/records/${recordId}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Tenant-ID': tenantId,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || 'Nie udało się usunąć dokumentu z paczki.');
+    }
+  },
 };
+

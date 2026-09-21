@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useToast } from '../components/Toast';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { BatchProcessingLogItem, BatchStatusResponse, DocumentPhase } from '../types/api';
 
@@ -26,6 +26,7 @@ const PHASE_LABELS: Record<string, { label: string; icon: string; style: string 
 
 export const BatchStatusView: React.FC = () => {
   const toast = useToast();
+  const navigate = useNavigate();
   const { batchId = 'default' } = useParams<{ batchId: string }>();
 
   const [statusData, setStatusData] = useState<BatchStatusResponse>({
@@ -40,6 +41,8 @@ export const BatchStatusView: React.FC = () => {
   });
   const [logs, setLogs] = useState<BatchProcessingLogItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingBatch, setDeletingBatch] = useState(false);
+  const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
 
   // Filtrowanie, wyszukiwanie i paginacja
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all');
@@ -48,6 +51,45 @@ export const BatchStatusView: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
 
   const pollingIntervalRef = useRef<number | null>(null);
+
+  const handleDeleteBatch = async () => {
+    if (!window.confirm(`Czy na pewno chcesz usunąć całą paczkę #${batchId} wraz ze wszystkimi dokumentami?`)) {
+      return;
+    }
+    setDeletingBatch(true);
+    try {
+      await apiService.deleteBatch(batchId);
+      toast.success('Paczka usunięta', `Paczka #${batchId} została pomyślnie usunięta.`);
+      navigate('/');
+    } catch (err: any) {
+      console.error('Błąd usuwania paczki:', err);
+      toast.error('Błąd usuwania', err?.message || 'Nie udało się usunąć paczki.');
+    } finally {
+      setDeletingBatch(false);
+    }
+  };
+
+  const handleDeleteRecord = async (recordId: string, filename: string) => {
+    if (!window.confirm(`Czy na pewno chcesz usunąć dokument '${filename}' z kolejki?`)) {
+      return;
+    }
+    setDeletingRecordId(recordId);
+    try {
+      await apiService.deleteBatchRecord(batchId, recordId);
+      setLogs((prev) => prev.filter((l) => l.id !== recordId));
+      setStatusData((prev) => ({
+        ...prev,
+        total_files: Math.max(0, prev.total_files - 1),
+        remaining_files: Math.max(0, prev.remaining_files - 1),
+      }));
+      toast.success('Dokument usunięty', `Dokument '${filename}' został usunięty z paczki.`);
+    } catch (err: any) {
+      console.error('Błąd usuwania dokumentu:', err);
+      toast.error('Błąd usuwania', err?.message || 'Nie udało się usunąć dokumentu.');
+    } finally {
+      setDeletingRecordId(null);
+    }
+  };
 
   const fetchStatus = async () => {
     try {
@@ -207,7 +249,18 @@ export const BatchStatusView: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex space-x-md">
+          <div className="flex space-x-md items-center">
+            <button
+              type="button"
+              onClick={handleDeleteBatch}
+              disabled={deletingBatch}
+              className="px-md py-sm border border-error/30 text-error hover:bg-error/10 rounded-lg font-label-bold text-label-bold transition-colors flex items-center space-x-xs cursor-pointer disabled:opacity-50"
+              title="Usuń całą paczkę"
+            >
+              <span className="material-symbols-outlined text-[18px]">delete</span>
+              <span>{deletingBatch ? 'Usuwanie…' : 'Usuń paczkę'}</span>
+            </button>
+
             {isCompleted ? (
               <Link
                 to={`/result/${batchId}`}
@@ -545,6 +598,9 @@ export const BatchStatusView: React.FC = () => {
                 <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant whitespace-nowrap">
                   STATUS &amp; PHASE
                 </th>
+                <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant whitespace-nowrap text-right">
+                  ACTIONS
+                </th>
               </tr>
             </thead>
 
@@ -564,11 +620,14 @@ export const BatchStatusView: React.FC = () => {
                     <td className="py-md px-md">
                       <div className="h-5 bg-surface-container rounded w-32" />
                     </td>
+                    <td className="py-md px-md text-right">
+                      <div className="h-6 bg-surface-container rounded w-6 ml-auto" />
+                    </td>
                   </tr>
                 ))
               ) : filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-xl text-center text-on-surface-variant">
+                  <td colSpan={5} className="py-xl text-center text-on-surface-variant">
                     <span className="material-symbols-outlined text-3xl mb-xs">search_off</span>
                     <p className="font-body-md">
                       {searchQuery
@@ -637,7 +696,7 @@ export const BatchStatusView: React.FC = () => {
                       {/* SIZE */}
                       <td className="py-md px-md text-on-surface-variant">{log.file_size || '—'}</td>
 
-                      {/* STATUS & PHASE (Zamiast osobnej kolumny ACTION) */}
+                      {/* STATUS & PHASE */}
                       <td className="py-md px-md">
                         <div className="flex items-center gap-xs flex-wrap">
                           {/* 1. SUCCESS / COMPLETED */}
@@ -706,6 +765,24 @@ export const BatchStatusView: React.FC = () => {
                             </span>
                           )}
                         </div>
+                      </td>
+
+                      {/* ACTIONS */}
+                      <td className="py-md px-md text-right whitespace-nowrap">
+                        {isItemQueued && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteRecord(log.id, log.filename)}
+                            disabled={deletingRecordId === log.id}
+                            className="p-1.5 rounded-lg text-on-surface-variant hover:text-error hover:bg-error/10 transition-colors cursor-pointer disabled:opacity-50"
+                            title="Usuń dokument z kolejki"
+                            aria-label="Usuń dokument"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">
+                              {deletingRecordId === log.id ? 'hourglass_empty' : 'delete'}
+                            </span>
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
