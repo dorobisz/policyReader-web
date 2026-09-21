@@ -77,16 +77,50 @@ export interface BatchStatusResponse {
   currently_processing?: DocumentPhaseInfo[];
 }
 
+export type DocumentType = 'policy' | 'vehicle_registration';
+
 /**
- * Odpowiedź zawierająca wyekstrahowane dane pojedynczej polisy.
+ * Wyekstrahowane dane z dowodu rejestracyjnego pojazdu.
  */
-export interface PolicyRecordResponse {
+export interface VehicleRegistrationData {
+  numer_rejestracyjny?: string | null;
+  marka?: string | null;
+  typ?: string | null;
+  model?: string | null;
+  vin?: string | null;
+  data_pierwszej_rejestracji?: string | null;
+  rok_produkcji?: string | null;
+  pojemnosc_silnika_cm3?: string | null;
+  moc_silnika_kw?: string | null;
+  rodzaj_paliwa?: string | null;
+  dopuszczalna_masa_calkowita_kg?: string | null;
+  masa_wlasna_kg?: string | null;
+  liczba_miejsc?: string | null;
+  kategoria_pojazdu?: string | null;
+  nr_dowodu_rejestracyjnego?: string | null;
+  wlasciciel?: string | null;
+  [key: string]: any;
+}
+
+/**
+ * Wyekstrahowane dane z polisy ubezpieczeniowej.
+ */
+export interface PolicyExtractedData {
+  towarzystwo?: string | null;
+  kwota_skladki?: string | null;
+  [key: string]: any;
+}
+
+/**
+ * Odpowiedź zawierająca wyekstrahowane dane pojedynczego dokumentu (polisy lub dowodu rejestracyjnego).
+ */
+export interface DocumentRecordResponse {
   id: string;
   batch_id: string;
   tenant_id: string;
   filename: string;
-  towarzystwo: string | null;
-  kwota_skladki: string | null;
+  document_type: DocumentType;
+  extracted_data: Record<string, any> | null;
   status: PolicyRecordStatus | string;
   current_phase?: DocumentPhase | string | null;
   ocr_used: boolean;
@@ -97,8 +131,11 @@ export interface PolicyRecordResponse {
   created_at: string | null;
 }
 
+/** Alias dla wstecznej kompatybilności */
+export type PolicyRecordResponse = DocumentRecordResponse;
+
 /**
- * Odpowiedź endpointu GET /jobs/{batch_id}/results z kompletem sparsowanych polis.
+ * Odpowiedź endpointu GET /jobs/{batch_id}/results z kompletem sparsowanych dokumentów.
  */
 export interface BatchResultsResponse {
   batch_id: string;
@@ -107,7 +144,7 @@ export interface BatchResultsResponse {
   total_files: number;
   processed_files: number;
   failed_files: number;
-  records: PolicyRecordResponse[];
+  records: DocumentRecordResponse[];
 }
 
 // ============================================================================
@@ -139,9 +176,9 @@ export interface Batch {
 }
 
 /**
- * Rozszerzony rekord polisy wykorzystywany w tabeli wyników (Batch Results).
+ * Rozszerzony rekord dokumentu wykorzystywany w tabeli wyników (Batch Results).
  */
-export interface PolicyRecord extends PolicyRecordResponse {
+export interface PolicyRecord extends DocumentRecordResponse {
   waluta?: string; // domyślnie 'PLN' lub 'USD'
   confidence?: ConfidenceLevel;
   typ_ubezpieczenia?: string; // np. 'General Liability', 'OC Przewoźnika'

@@ -52,12 +52,15 @@ export const UploadView: React.FC = () => {
     }
 
     incoming.forEach((file) => {
-      // Walidacja rozszerzenia / typu MIME (tylko PDF)
-      const isPdf =
-        file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+      // Walidacja rozszerzenia / typu MIME (PDF oraz zdjęcia dowodów JPG/PNG)
+      const isAllowed = APP_CONFIG.allowedExtensions.some((ext) =>
+        file.name.toLowerCase().endsWith(ext)
+      );
 
-      if (!isPdf) {
-        errors.push(`Plik "${file.name}" został pominięty — akceptowane są wyłącznie pliki PDF.`);
+      if (!isAllowed) {
+        errors.push(
+          `Plik "${file.name}" został pominięty — akceptowane są pliki PDF oraz obrazy JPG/PNG.`,
+        );
         return;
       }
 
@@ -319,7 +322,7 @@ export const UploadView: React.FC = () => {
             type="file"
             multiple
             disabled={isAtCapacity}
-            accept=".pdf,application/pdf"
+            accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
             onChange={handleFileInputChange}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer pointer-events-none"
             tabIndex={-1}
@@ -345,7 +348,7 @@ export const UploadView: React.FC = () => {
           <p className="font-headline-sm text-headline-sm text-on-surface mb-xs text-center">
             {isAtCapacity
               ? 'Maksymalny limit 200 plików został osiągnięty'
-              : 'Drag & drop files here'}
+              : 'Drag & drop policies (PDF) or vehicle registration photos (JPG/PNG)'}
           </p>
           <p className="font-body-sm text-body-sm text-on-surface-variant mb-sm text-center">
             {isAtCapacity ? (
@@ -364,7 +367,7 @@ export const UploadView: React.FC = () => {
           <div className="flex flex-wrap items-center justify-center gap-xs font-label-md text-label-md text-on-surface-variant bg-surface-variant px-sm py-xs rounded">
             <span className="material-symbols-outlined text-[16px]">info</span>
             <span>
-              Format: PDF only • Max: {formatBytes(APP_CONFIG.maxFileSizeBytes)} / file • Max {APP_CONFIG.maxFilesPerBatch} files / batch
+              Format: PDF, JPG, PNG • Max: {formatBytes(APP_CONFIG.maxFileSizeBytes)} / file • Max {APP_CONFIG.maxFilesPerBatch} files / batch
             </span>
           </div>
         </div>
@@ -493,8 +496,8 @@ export const UploadView: React.FC = () => {
                         <span className="text-label-sm font-mono text-on-surface-variant w-8 shrink-0">
                           #{globalIndex}
                         </span>
-                        <span className="material-symbols-outlined text-error shrink-0">
-                          picture_as_pdf
+                        <span className={`material-symbols-outlined shrink-0 ${fileItem.name.toLowerCase().endsWith('.pdf') ? 'text-error' : 'text-secondary'}`}>
+                          {fileItem.name.toLowerCase().endsWith('.pdf') ? 'picture_as_pdf' : 'image'}
                         </span>
                         <div className="min-w-0">
                           <p

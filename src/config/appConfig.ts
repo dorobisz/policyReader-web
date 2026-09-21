@@ -16,6 +16,6 @@ export const APP_CONFIG: AppConfig = {
   maxFileSizeBytes: 50 * 1024 * 1024,
   // Domyślna liczba plików na stronę na liście uploadu
   defaultPageSize: 10,
-  // Dozwolone rozszerzenia plików
-  allowedExtensions: ['.pdf'],
+  // Dozwolone rozszerzenia plików (polisy PDF oraz zdjęcia dowodów rejestracyjnych)
+  allowedExtensions: ['.pdf', '.jpg', '.jpeg', '.png'],
 };

@@ -298,11 +298,16 @@ export const apiService = {
             itemStatus = 'queued';
           }
 
+          const docLabel =
+            r.document_type === 'vehicle_registration'
+              ? 'Dowód Rejestracyjny'
+              : r.extracted_data?.towarzystwo || 'Polisa Ubezpieczeniowa';
+
           return {
             id: r.id || `log-${index}-${batchId}`,
             filename: r.filename,
-            document_type: r.towarzystwo || 'Policy Document',
-            file_size: r.file_size || 'PDF',
+            document_type: docLabel,
+            file_size: r.file_size || (r.filename.toLowerCase().endsWith('.pdf') ? 'PDF' : 'JPG'),
             status: itemStatus,
             current_phase: (r.current_phase as import('../types/api').DocumentPhase) || (itemStatus === 'processing' ? 'ocr' : 'queued'),
             error_message: r.error_message || undefined,
@@ -318,7 +323,7 @@ export const apiService = {
   },
 
   /**
-   * Pobiera wyekstrahowane rekordy polis dla paczki (GET /jobs/{batch_id}/results)
+   * Pobiera wyekstrahowane rekordy dokumentów dla paczki (GET /jobs/{batch_id}/results)
    * Zwraca dane z backendu lub bogate dane demonstracyjne w trybie fallback.
    */
   async getBatchResults(batchId: string, tenantId = 'default'): Promise<BatchResultsResponse> {
@@ -333,22 +338,25 @@ export const apiService = {
       // Fallback do danych demonstracyjnych
     }
 
-    // Bogate dane demonstracyjne odwzorowujące makietę result/code.html
+    // Bogate dane demonstracyjne z polimorfizmem JSONB
     return {
       batch_id: batchId,
       tenant_id: tenantId,
       status: 'completed',
-      total_files: 145,
-      processed_files: 143,
-      failed_files: 2,
+      total_files: 5,
+      processed_files: 5,
+      failed_files: 0,
       records: [
         {
           id: `rec-1-${batchId}`,
           batch_id: batchId,
           tenant_id: tenantId,
           filename: 'Zurich_Liability_2023_Q4.pdf',
-          towarzystwo: 'Zurich North America',
-          kwota_skladki: '124500.00',
+          document_type: 'policy',
+          extracted_data: {
+            towarzystwo: 'Zurich North America',
+            kwota_skladki: '124500.00',
+          },
           status: 'success',
           ocr_used: false,
           czas_procesu_sek: 1.2,
@@ -360,8 +368,11 @@ export const apiService = {
           batch_id: batchId,
           tenant_id: tenantId,
           filename: 'Chubb_Property_Renew_FINAL.pdf',
-          towarzystwo: 'Chubb Group',
-          kwota_skladki: '89250.50',
+          document_type: 'policy',
+          extracted_data: {
+            towarzystwo: 'Chubb Group',
+            kwota_skladki: '89250.50',
+          },
           status: 'success',
           ocr_used: false,
           czas_procesu_sek: 0.9,
@@ -372,25 +383,59 @@ export const apiService = {
           id: `rec-3-${batchId}`,
           batch_id: batchId,
           tenant_id: tenantId,
-          filename: 'AIG_Umbrella_Draft_v2.docx',
-          towarzystwo: 'AIG',
-          kwota_skladki: null,
-          status: 'failed',
-          ocr_used: true,
-          czas_procesu_sek: 4.7,
-          error_message: 'Extraction failed: unable to parse premium amount from scanned document.',
+          filename: 'dowod_rejestracyjny_toyota.jpg',
+          document_type: 'vehicle_registration',
+          extracted_data: {
+            numer_rejestracyjny: 'KR 4492A',
+            marka: 'TOYOTA',
+            typ: 'E12',
+            model: 'COROLLA',
+            vin: 'JTDKN3DU5A0123456',
+            rok_produkcji: '2022',
+            data_pierwszej_rejestracji: '2022-04-15',
+            pojemnosc_silnika_cm3: '1798',
+            moc_silnika_kw: '103',
+            rodzaj_paliwa: 'P/EE (Hybryda)',
+            dopuszczalna_masa_calkowita_kg: '1835',
+            masa_wlasna_kg: '1360',
+            liczba_miejsc: '5',
+            kategoria_pojazdu: 'M1',
+            nr_dowodu_rejestracyjnego: 'DR/BAA 8892110',
+            wlasciciel: 'JAN KOWALSKI',
+          },
+          status: 'success',
+          ocr_used: false,
+          czas_procesu_sek: 2.1,
+          error_message: null,
           created_at: '2023-10-24T14:30:00',
         },
         {
           id: `rec-4-${batchId}`,
           batch_id: batchId,
           tenant_id: tenantId,
-          filename: 'Travelers_Auto_Fleet_List.pdf',
-          towarzystwo: 'Travelers',
-          kwota_skladki: '15700.00',
+          filename: 'dowod_rejestracyjny_skoda.png',
+          document_type: 'vehicle_registration',
+          extracted_data: {
+            numer_rejestracyjny: 'WI 78129',
+            marka: 'SKODA',
+            typ: 'NX',
+            model: 'OCTAVIA COMBI',
+            vin: 'TMBJJ7NX5NY098765',
+            rok_produkcji: '2023',
+            data_pierwszej_rejestracji: '2023-01-20',
+            pojemnosc_silnika_cm3: '1968',
+            moc_silnika_kw: '110',
+            rodzaj_paliwa: 'D (Diesel)',
+            dopuszczalna_masa_calkowita_kg: '2010',
+            masa_wlasna_kg: '1485',
+            liczba_miejsc: '5',
+            kategoria_pojazdu: 'M1',
+            nr_dowodu_rejestracyjnego: 'DR/BAA 9923412',
+            wlasciciel: 'FLEET LOGISTICS SP. Z O.O.',
+          },
           status: 'success',
           ocr_used: false,
-          czas_procesu_sek: 0.7,
+          czas_procesu_sek: 1.8,
           error_message: null,
           created_at: '2023-10-24T14:28:00',
         },
@@ -398,92 +443,37 @@ export const apiService = {
           id: `rec-5-${batchId}`,
           batch_id: batchId,
           tenant_id: tenantId,
-          filename: 'Zurich_WC_Addendum.pdf',
-          towarzystwo: 'Zurich North America',
-          kwota_skladki: '4200.00',
+          filename: 'PZU_Flota_2023_Aneks.pdf',
+          document_type: 'policy',
+          extracted_data: {
+            towarzystwo: 'PZU SA',
+            kwota_skladki: '15700.00',
+          },
           status: 'success',
           ocr_used: false,
-          czas_procesu_sek: 0.5,
+          czas_procesu_sek: 0.7,
           error_message: null,
           created_at: '2023-10-24T14:25:00',
-        },
-        {
-          id: `rec-6-${batchId}`,
-          batch_id: batchId,
-          tenant_id: tenantId,
-          filename: 'Hartford_GL_Policy_2023.pdf',
-          towarzystwo: 'The Hartford',
-          kwota_skladki: '52300.00',
-          status: 'success',
-          ocr_used: false,
-          czas_procesu_sek: 1.1,
-          error_message: null,
-          created_at: '2023-10-24T14:22:00',
-        },
-        {
-          id: `rec-7-${batchId}`,
-          batch_id: batchId,
-          tenant_id: tenantId,
-          filename: 'Liberty_Mutual_BOP_Q4.pdf',
-          towarzystwo: 'Liberty Mutual',
-          kwota_skladki: '31800.00',
-          status: 'success',
-          ocr_used: true,
-          czas_procesu_sek: 2.3,
-          error_message: null,
-          created_at: '2023-10-24T14:18:00',
-        },
-        {
-          id: `rec-8-${batchId}`,
-          batch_id: batchId,
-          tenant_id: tenantId,
-          filename: 'AIG_Directors_Officers.pdf',
-          towarzystwo: 'AIG',
-          kwota_skladki: null,
-          status: 'failed',
-          ocr_used: true,
-          czas_procesu_sek: 5.9,
-          error_message: 'OCR confidence too low: document quality insufficient for automated extraction.',
-          created_at: '2023-10-24T14:15:00',
-        },
-        {
-          id: `rec-9-${batchId}`,
-          batch_id: batchId,
-          tenant_id: tenantId,
-          filename: 'Nationwide_Property_Bundle.pdf',
-          towarzystwo: 'Nationwide',
-          kwota_skladki: '18500.00',
-          status: 'success',
-          ocr_used: false,
-          czas_procesu_sek: 0.8,
-          error_message: null,
-          created_at: '2023-10-24T14:10:00',
-        },
-        {
-          id: `rec-10-${batchId}`,
-          batch_id: batchId,
-          tenant_id: tenantId,
-          filename: 'Chubb_Cyber_Risk_2024.pdf',
-          towarzystwo: 'Chubb Group',
-          kwota_skladki: '275000.00',
-          status: 'success',
-          ocr_used: false,
-          czas_procesu_sek: 1.4,
-          error_message: null,
-          created_at: '2023-10-24T14:05:00',
         },
       ],
     };
   },
 
   /**
-   * Pobiera plik CSV z wynikami paczki (GET /jobs/{batch_id}/export/csv)
+   * Pobiera plik CSV z wynikami paczki (GET /jobs/{batch_id}/export/csv?document_type=...)
    * i uruchamia pobieranie w przeglądarce.
    */
-  async downloadBatchCsv(batchId: string, tenantId = 'default', records?: import('../types/api').PolicyRecordResponse[]): Promise<void> {
-    // Próba pobrania z prawdziwego API
+  async downloadBatchCsv(
+    batchId: string,
+    documentType: 'policy' | 'vehicle_registration' = 'policy',
+    tenantId = 'default',
+    records?: import('../types/api').DocumentRecordResponse[]
+  ): Promise<void> {
+    const isVehicle = documentType === 'vehicle_registration';
+    const downloadFilename = `batch_${batchId}_${isVehicle ? 'dowody_rejestracyjne' : 'polisy'}.csv`;
+
     try {
-      const response = await fetch(`${API_BASE_URL}/jobs/${batchId}/export/csv`, {
+      const response = await fetch(`${API_BASE_URL}/jobs/${batchId}/export/csv?document_type=${documentType}`, {
         headers: { 'X-Tenant-ID': tenantId },
       });
       if (response.ok) {
@@ -491,7 +481,7 @@ export const apiService = {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `batch_${batchId}_results.csv`;
+        a.download = downloadFilename;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -499,29 +489,61 @@ export const apiService = {
         return;
       }
     } catch {
-      // Fallback — generowanie CSV po stronie klienta
+      // Fallback do generowania w przeglądarce
     }
 
     // Fallback: generowanie CSV z przekazanych lub demonstracyjnych danych
-    const data = records ?? (await apiService.getBatchResults(batchId, tenantId)).records;
+    const allData = records ?? (await apiService.getBatchResults(batchId, tenantId)).records;
+    const filteredData = allData.filter((r) => (r.document_type || 'policy') === documentType);
     const BOM = '\uFEFF';
-    const header = 'nazwa_pliku;towarzystwo;kwota_skladki;status_przetwarzania;ocr_used;czas_procesu_sek;error_message';
-    const rows = data.map((r) => [
-      r.filename ?? '',
-      r.towarzystwo ?? '',
-      r.kwota_skladki ?? '',
-      r.status ?? '',
-      r.ocr_used ? 'TAK' : 'NIE',
-      r.czas_procesu_sek != null ? String(r.czas_procesu_sek).replace('.', ',') : '',
-      r.error_message ?? '',
-    ].join(';'));
 
-    const csvContent = BOM + [header, ...rows].join('\n');
+    let csvContent = '';
+    if (isVehicle) {
+      const header = 'nazwa_pliku;nr_rejestracyjny;marka;model;vin;rok_produkcji;data_pierwszej_rejestracji;pojemnosc_cm3;moc_kw;paliwo;dopuszczalna_masa_kg;masa_wlasna_kg;liczba_miejsc;kategoria;nr_dowodu;wlasciciel;status_przetwarzania;czas_procesu_sek;error_message';
+      const rows = filteredData.map((r) => {
+        const d = r.extracted_data || {};
+        return [
+          r.filename ?? '',
+          d.numer_rejestracyjny ?? '',
+          d.marka ?? '',
+          d.model ?? '',
+          d.vin ?? '',
+          d.rok_produkcji ?? '',
+          d.data_pierwszej_rejestracji ?? '',
+          d.pojemnosc_silnika_cm3 ?? '',
+          d.moc_silnika_kw ?? '',
+          d.rodzaj_paliwa ?? '',
+          d.dopuszczalna_masa_calkowita_kg ?? '',
+          d.masa_wlasna_kg ?? '',
+          d.liczba_miejsc ?? '',
+          d.kategoria_pojazdu ?? '',
+          d.nr_dowodu_rejestracyjnego ?? '',
+          d.wlasciciel ?? '',
+          r.status ?? '',
+          r.czas_procesu_sek != null ? String(r.czas_procesu_sek).replace('.', ',') : '',
+          r.error_message ?? '',
+        ].join(';');
+      });
+      csvContent = BOM + [header, ...rows].join('\n');
+    } else {
+      const header = 'nazwa_pliku;towarzystwo;kwota_skladki;status_przetwarzania;ocr_used;czas_procesu_sek;error_message';
+      const rows = filteredData.map((r) => [
+        r.filename ?? '',
+        r.extracted_data?.towarzystwo ?? '',
+        r.extracted_data?.kwota_skladki ?? '',
+        r.status ?? '',
+        r.ocr_used ? 'TAK' : 'NIE',
+        r.czas_procesu_sek != null ? String(r.czas_procesu_sek).replace('.', ',') : '',
+        r.error_message ?? '',
+      ].join(';'));
+      csvContent = BOM + [header, ...rows].join('\n');
+    }
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `batch_${batchId}_results.csv`;
+    a.download = downloadFilename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

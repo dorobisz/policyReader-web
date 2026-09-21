@@ -2,33 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useToast } from "../components/Toast";
 import { useParams, Link } from "react-router-dom";
 import { apiService } from "../services/api";
-import { PolicyRecordResponse } from "../types/api";
+import { DocumentRecordResponse, DocumentType, PolicyRecord } from "../types/api";
+import { PolicyResultsTab } from "../components/results/PolicyResultsTab";
+import { VehicleRegResultsTab } from "../components/results/VehicleRegResultsTab";
+import { VehicleRegDetailCard } from "../components/results/VehicleRegDetailCard";
 
-function formatPremium(value: string | null | undefined): string {
-  if (!value) return "—";
-  const cleaned = value.replace(/pln|zł/gi, "").trim();
-  const normalized = cleaned.replace(/\s/g, "").replace(",", ".");
-  const num = parseFloat(normalized);
-  if (isNaN(num)) return value.toUpperCase().includes("PLN") ? value : `${value} PLN`;
-  return `${num.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PLN`;
-}
-
-function formatDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  try {
-    return new Date(iso)
-      .toLocaleString("pl-PL", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-      .replace(",", "");
-  } catch {
-    return iso;
-  }
-}
 
 function formatFileSize(bytesOrStr: number | string | null | undefined): string {
   if (bytesOrStr == null) return "—";
@@ -46,6 +24,7 @@ function formatFileSize(bytesOrStr: number | string | null | undefined): string 
 function getFileIcon(filename: string): string {
   const ext = filename?.split(".").pop()?.toLowerCase();
   if (ext === "pdf") return "picture_as_pdf";
+  if (["jpg", "jpeg", "png", "webp"].includes(ext || "")) return "image";
   if (ext === "docx" || ext === "doc") return "description";
   return "insert_drive_file";
 }
@@ -73,83 +52,8 @@ const StatusBadge: React.FC<{ status: string; errorMessage?: string | null }> = 
   );
 };
 
-interface ResultRowProps {
-  record: PolicyRecordResponse;
-  onPreview: (record: PolicyRecordResponse) => void;
-}
-
-const ResultRow: React.FC<ResultRowProps> = ({ record, onPreview }) => {
-  const isFail = record.status !== "success";
-  const rowBg = isFail ? "bg-rose-50/20" : "";
-
-  return (
-    <tr className={`hover:bg-surface-container-low transition-colors group ${rowBg}`}>
-      {/* Nazwa pliku */}
-      <td className="py-3 px-md">
-        <div className="flex items-center gap-sm">
-          <span className="material-symbols-outlined text-outline-variant text-[18px]">
-            {getFileIcon(record.filename ?? "")}
-          </span>
-          <span
-            className="font-medium text-on-surface truncate max-w-[260px]"
-            title={record.filename ?? ""}
-          >
-            {record.filename ?? "—"}
-          </span>
-        </div>
-      </td>
-
-      {/* Towarzystwo */}
-      <td className="py-3 px-md text-on-surface font-body-sm text-body-sm">
-        {record.towarzystwo ?? "—"}
-      </td>
-
-      {/* Składka (połączona kwota i waluta) */}
-      <td className="py-3 px-md text-right font-medium text-on-surface font-body-sm text-body-sm whitespace-nowrap">
-        {formatPremium(record.kwota_skladki)}
-      </td>
-
-      {/* Data przetworzenia */}
-      <td className="py-3 px-md text-on-surface-variant font-body-sm text-body-sm whitespace-nowrap">
-        {formatDate(record.created_at)}
-      </td>
-
-      {/* Status SUCCESS / FAIL */}
-      <td className="py-3 px-md text-center whitespace-nowrap">
-        <StatusBadge status={record.status ?? "failed"} errorMessage={record.error_message} />
-      </td>
-
-      {/* Podgląd z ikonką oka */}
-      <td className="py-3 px-md text-center whitespace-nowrap">
-        <button
-          onClick={() => onPreview(record)}
-          className="p-1.5 rounded-lg text-secondary hover:bg-secondary/10 hover:text-secondary-container transition-colors inline-flex items-center justify-center cursor-pointer"
-          title="Podgląd danych wyekstrahowanych z PDF"
-          aria-label="Podgląd danych"
-        >
-          <span className="material-symbols-outlined text-[20px]">visibility</span>
-        </button>
-      </td>
-    </tr>
-  );
-};
-
-const SkeletonRows: React.FC = () => (
-  <>
-    {Array.from({ length: 5 }).map((_, i) => (
-      <tr key={i} className="animate-pulse">
-        {Array.from({ length: 6 }).map((_, j) => (
-          <td key={j} className="py-3 px-md">
-            <div className="h-4 bg-surface-container rounded w-full" />
-          </td>
-        ))}
-      </tr>
-    ))}
-  </>
-);
-
 interface DetailModalProps {
-  record: PolicyRecordResponse | null;
+  record: DocumentRecordResponse | null;
   onClose: () => void;
 }
 
@@ -166,43 +70,7 @@ const DetailModal: React.FC<DetailModalProps> = ({ record, onClose }) => {
 
   if (!record) return null;
 
-  const EXCLUDED_KEYS = new Set([
-    "id",
-    "batch_id",
-    "tenant_id",
-    "status",
-    "current_phase",
-    "ocr_used",
-    "czas_procesu_sek",
-    "error_message",
-    "file_size",
-    "file_size_bytes",
-    "created_at",
-    "processing_started_at",
-    "ocr_duration_ms",
-    "ocr_pages",
-    "ocr_chars",
-    "llm_duration_ms",
-    "parse_duration_ms",
-    "completed_at",
-    "total_duration_ms",
-    "retry_count",
-    "progress_message",
-  ]);
-
-  const documentData: Record<string, any> = {
-    filename: record.filename,
-    towarzystwo: record.towarzystwo,
-    kwota_skladki: record.kwota_skladki,
-  };
-
-  Object.entries(record).forEach(([key, value]) => {
-    if (!EXCLUDED_KEYS.has(key) && !(key in documentData)) {
-      documentData[key] = value;
-    }
-  });
-
-  const rawJson = JSON.stringify(documentData, null, 2);
+  const rawJson = JSON.stringify(record.extracted_data || {}, null, 2);
 
   const handleCopy = async () => {
     try {
@@ -249,47 +117,70 @@ const DetailModal: React.FC<DetailModalProps> = ({ record, onClose }) => {
 
         {/* Modal Content */}
         <div className="p-6 overflow-y-auto space-y-6">
-          {/* Główne informacje o dokumencie: tylko nazwa pliku, rozmiar, towarzystwo i status */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-surface-bright p-4 rounded-xl border border-outline-variant/60">
-            <div>
-              <span className="text-xs font-medium text-on-surface-variant block mb-1">
-                Nazwa pliku
-              </span>
+          {/* Główne informacje o dokumencie i polisie w zwięzłej formie */}
+          <div className="bg-surface-bright rounded-xl border border-outline-variant/60 p-4 space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-outline-variant/40">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-outline-variant text-[18px]">
+                <span className="material-symbols-outlined text-secondary text-[20px]">
                   {getFileIcon(record.filename ?? "")}
                 </span>
-                <span className="font-semibold text-sm text-on-surface break-all">
+                <span className="font-semibold text-sm text-on-surface truncate max-w-sm" title={record.filename}>
                   {record.filename ?? "—"}
                 </span>
+                <span className="text-xs text-on-surface-variant font-normal">
+                  ({formatFileSize(record.file_size_bytes ?? record.file_size)})
+                </span>
               </div>
+              <StatusBadge status={record.status ?? "failed"} errorMessage={record.error_message} />
             </div>
 
-            <div>
-              <span className="text-xs font-medium text-on-surface-variant block mb-1">
-                Rozmiar pliku
-              </span>
-              <span className="font-semibold text-sm text-on-surface">
-                {formatFileSize(record.file_size_bytes ?? record.file_size)}
-              </span>
-            </div>
-
-            <div>
-              <span className="text-xs font-medium text-on-surface-variant block mb-1">
-                Towarzystwo ubezpieczeniowe
-              </span>
-              <span className="font-semibold text-sm text-on-surface">
-                {record.towarzystwo ?? "—"}
-              </span>
-            </div>
-
-            <div>
-              <span className="text-xs font-medium text-on-surface-variant block mb-1">
-                Status odczytu
-              </span>
-              <div>
-                <StatusBadge status={record.status ?? "failed"} errorMessage={record.error_message} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+              <div className="flex justify-between py-1 border-b border-outline-variant/20">
+                <span className="text-on-surface-variant font-medium text-[11px]">Numer polisy:</span>
+                <span className="font-mono font-semibold text-on-surface">
+                  {record.extracted_data?.numer_polisy || "—"}
+                </span>
               </div>
+              <div className="flex justify-between py-1 border-b border-outline-variant/20">
+                <span className="text-on-surface-variant font-medium text-[11px]">Towarzystwo:</span>
+                <span className="font-semibold text-secondary">
+                  {record.extracted_data?.towarzystwo || "—"}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-outline-variant/20">
+                <span className="text-on-surface-variant font-medium text-[11px]">Składka:</span>
+                <span className="font-semibold text-on-surface">
+                  {record.extracted_data?.kwota_skladki ? `${record.extracted_data.kwota_skladki} PLN` : "—"}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-outline-variant/20">
+                <span className="text-on-surface-variant font-medium text-[11px]">Okres ubezpieczenia:</span>
+                <span className="font-medium text-on-surface">
+                  {record.extracted_data?.okres_ubezpieczenia_od || record.extracted_data?.okres_ubezpieczenia_do
+                    ? `${record.extracted_data?.okres_ubezpieczenia_od || "—"} do ${record.extracted_data?.okres_ubezpieczenia_do || "—"}`
+                    : "—"}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-outline-variant/20">
+                <span className="text-on-surface-variant font-medium text-[11px]">Ubezpieczający:</span>
+                <span className="font-medium text-on-surface truncate max-w-[200px]" title={record.extracted_data?.ubezpieczajacy}>
+                  {record.extracted_data?.ubezpieczajacy || "—"}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-outline-variant/20">
+                <span className="text-on-surface-variant font-medium text-[11px]">Ubezpieczony:</span>
+                <span className="font-medium text-on-surface truncate max-w-[200px]" title={record.extracted_data?.ubezpieczony}>
+                  {record.extracted_data?.ubezpieczony || "—"}
+                </span>
+              </div>
+              {record.extracted_data?.przedmiot_ubezpieczenia && (
+                <div className="flex justify-between py-1 col-span-1 md:col-span-2 border-b border-outline-variant/20">
+                  <span className="text-on-surface-variant font-medium text-[11px]">Przedmiot:</span>
+                  <span className="font-medium text-on-surface truncate max-w-md">
+                    {record.extracted_data.przedmiot_ubezpieczenia}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -346,32 +237,44 @@ const DetailModal: React.FC<DetailModalProps> = ({ record, onClose }) => {
 export const BatchResultsView: React.FC = () => {
   const { batchId = "default" } = useParams<{ batchId: string }>();
   const toast = useToast();
-  const [allRecords, setAllRecords] = useState<PolicyRecordResponse[]>([]);
+  const [allRecords, setAllRecords] = useState<PolicyRecord[]>([]);
   const [totalFiles, setTotalFiles] = useState(0);
   const [processedFiles, setProcessedFiles] = useState(0);
   const [loading, setLoading] = useState(true);
   const [csvExporting, setCsvExporting] = useState(false);
 
+  // Zakładki (Tabs) & Eksport (uzależniony od aktywnej zakładki)
+  const [activeTab, setActiveTab] = useState<DocumentType>("policy");
+
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState("");
   const [filterInsurer, setFilterInsurer] = useState("");
+  const [filterMake, setFilterMake] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [sortDir] = useState<"asc" | "desc">("desc");
 
   // Pagination
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
   // Selected Record for Preview Modal
-  const [selectedRecord, setSelectedRecord] = useState<PolicyRecordResponse | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<PolicyRecord | null>(null);
 
   useEffect(() => {
     const load = async () => {
       try {
         const data = await apiService.getBatchResults(batchId);
-        setAllRecords(data.records ?? []);
+        const records = (data.records ?? []) as PolicyRecord[];
+        setAllRecords(records);
         setTotalFiles(data.total_files ?? 0);
         setProcessedFiles(data.processed_files ?? 0);
+
+        // Automatyczny wybór aktywnej zakładki: jeśli są same dowody, otwórz dowody
+        const hasPolicies = records.some((r) => (r.document_type || "policy") === "policy");
+        const hasVehicles = records.some((r) => r.document_type === "vehicle_registration");
+        if (!hasPolicies && hasVehicles) {
+          setActiveTab("vehicle_registration");
+        }
       } catch (err) {
         console.error("Error loading results:", err);
         toast.error("Nie udało się załadować wyników", "Załadowano dane demonstracyjne.");
@@ -382,18 +285,51 @@ export const BatchResultsView: React.FC = () => {
     load();
   }, [batchId]);
 
+  // Podział rekordów na typy
+  const policyRecords = useMemo(
+    () => allRecords.filter((r) => (r.document_type || "policy") === "policy"),
+    [allRecords]
+  );
+  const vehicleRecords = useMemo(
+    () => allRecords.filter((r) => r.document_type === "vehicle_registration"),
+    [allRecords]
+  );
+
+  // Listy wartości do filtrów
   const uniqueInsurers = useMemo(() => {
-    const s = new Set(allRecords.map((r) => r.towarzystwo ?? "").filter(Boolean));
+    const s = new Set(policyRecords.map((r) => r.extracted_data?.towarzystwo ?? "").filter(Boolean));
     return Array.from(s).sort();
-  }, [allRecords]);
+  }, [policyRecords]);
+
+  const uniqueMakes = useMemo(() => {
+    const s = new Set(vehicleRecords.map((r) => r.extracted_data?.marka ?? "").filter(Boolean));
+    return Array.from(s).sort();
+  }, [vehicleRecords]);
+
+  // Filtrowanie rekordów dla aktualnie wybranej zakładki
+  const currentTabRecords = activeTab === "policy" ? policyRecords : vehicleRecords;
 
   const filtered = useMemo(() => {
-    let result = [...allRecords];
+    let result = [...currentTabRecords];
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      result = result.filter((r) => r.filename?.toLowerCase().includes(q));
+      result = result.filter((r) => {
+        const fnameMatch = r.filename?.toLowerCase().includes(q);
+        const d = r.extracted_data || {};
+        const regMatch = d.numer_rejestracyjny?.toLowerCase().includes(q);
+        const vinMatch = d.vin?.toLowerCase().includes(q);
+        const companyMatch = d.towarzystwo?.toLowerCase().includes(q);
+        return fnameMatch || regMatch || vinMatch || companyMatch;
+      });
     }
-    if (filterInsurer) result = result.filter((r) => r.towarzystwo === filterInsurer);
+
+    if (activeTab === "policy" && filterInsurer) {
+      result = result.filter((r) => r.extracted_data?.towarzystwo === filterInsurer);
+    }
+    if (activeTab === "vehicle_registration" && filterMake) {
+      result = result.filter((r) => r.extracted_data?.marka === filterMake);
+    }
+
     if (filterStatus === "success") result = result.filter((r) => r.status === "success");
     if (filterStatus === "failed") result = result.filter((r) => r.status !== "success");
 
@@ -403,7 +339,7 @@ export const BatchResultsView: React.FC = () => {
       return sortDir === "desc" ? db - da : da - db;
     });
     return result;
-  }, [allRecords, searchQuery, filterInsurer, filterStatus, sortDir]);
+  }, [currentTabRecords, searchQuery, filterInsurer, filterMake, filterStatus, sortDir, activeTab]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = useMemo(
@@ -411,12 +347,25 @@ export const BatchResultsView: React.FC = () => {
     [filtered, page, pageSize]
   );
 
+  const handleTabChange = (tab: DocumentType) => {
+    setActiveTab(tab);
+    setPage(1);
+    setSearchQuery("");
+    setFilterInsurer("");
+    setFilterMake("");
+    setFilterStatus("");
+  };
+
   const handleSearchChange = (v: string) => {
     setSearchQuery(v);
     setPage(1);
   };
   const handleFilterInsurer = (v: string) => {
     setFilterInsurer(v);
+    setPage(1);
+  };
+  const handleFilterMake = (v: string) => {
+    setFilterMake(v);
     setPage(1);
   };
   const handleFilterStatus = (v: string) => {
@@ -430,21 +379,24 @@ export const BatchResultsView: React.FC = () => {
   const handleClearFilters = () => {
     setSearchQuery("");
     setFilterInsurer("");
+    setFilterMake("");
     setFilterStatus("");
     setPage(1);
   };
 
-  const isFiltered = Boolean(searchQuery.trim() || filterInsurer || filterStatus);
+  const isFiltered = Boolean(searchQuery.trim() || filterInsurer || filterMake || filterStatus);
 
   const successCount = allRecords.filter((r) => r.status === "success").length;
   const successRate =
     allRecords.length > 0 ? ((successCount / allRecords.length) * 100).toFixed(1) : "100.0";
 
+  // Eksport CSV ze sparametryzowanym typem dokumentu uzależnionym od aktywnej zakładki
   const handleExportCsv = async () => {
     setCsvExporting(true);
     try {
-      await apiService.downloadBatchCsv(batchId, "default", filtered);
-      toast.success("Eksport CSV", "Plik CSV został pomyślnie wygenerowany i pobrany.");
+      await apiService.downloadBatchCsv(batchId, activeTab, "default", allRecords);
+      const label = activeTab === "vehicle_registration" ? "Dowody rejestracyjne" : "Polisy";
+      toast.success("Eksport CSV", `Plik CSV (${label}) został pomyślnie wygenerowany.`);
     } catch {
       toast.error("Błąd eksportu", "Nie udało się wyeksportować pliku CSV.");
     } finally {
@@ -458,18 +410,21 @@ export const BatchResultsView: React.FC = () => {
         batch_id: batchId,
         exported_at: new Date().toISOString(),
         total_records: filtered.length,
+        document_type: activeTab,
         records: filtered,
       };
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `batch_${batchId}_results.json`;
+      const fileSuffix = activeTab === "vehicle_registration" ? "dowody_rejestracyjne" : "polisy";
+      a.download = `batch_${batchId}_${fileSuffix}_results.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success("Eksport JSON", "Plik JSON został pomyślnie pobrany.");
+      const label = activeTab === "vehicle_registration" ? "Dowody rejestracyjne" : "Polisy";
+      toast.success("Eksport JSON", `Plik JSON (${label}) został pomyślnie pobrany.`);
     } catch (err) {
       console.error("Błąd pobierania JSON:", err);
       toast.error("Błąd eksportu", "Nie udało się wygenerować pliku JSON.");
@@ -492,7 +447,7 @@ export const BatchResultsView: React.FC = () => {
         </Link>
       </div>
 
-      {/* Nagłówek strony */}
+      {/* Nagłówek strony + Eksport z automatycznym typem z aktywnej zakładki */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-md">
         <div>
           <h2 className="font-display-lg text-display-lg text-on-surface">
@@ -509,35 +464,103 @@ export const BatchResultsView: React.FC = () => {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-sm flex-shrink-0">
+
+        {/* Panel akcji: eksport CSV i JSON zależny od aktywnej zakładki */}
+        <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
           <button
             onClick={handleExportCsv}
             disabled={csvExporting || loading}
-            className="flex items-center gap-xs px-md py-sm rounded-lg border border-outline-variant text-on-surface hover:bg-surface-container-low transition-colors font-label-bold text-label-bold bg-white disabled:opacity-50 disabled:cursor-not-allowed shadow-xs cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-secondary text-on-secondary hover:bg-secondary/90 transition-colors font-semibold text-xs shadow-xs cursor-pointer disabled:opacity-50"
+            title={
+              activeTab === "vehicle_registration"
+                ? "Eksportuj dowody rejestracyjne do pliku CSV"
+                : "Eksportuj polisy ubezpieczeniowe do pliku CSV"
+            }
           >
-            <span className="material-symbols-outlined text-[18px]">
+            <span className="material-symbols-outlined text-[16px]">
               {csvExporting ? "hourglass_empty" : "download"}
             </span>
-            {csvExporting ? "Eksportowanie…" : "Eksportuj do CSV"}
+            <span>
+              {csvExporting
+                ? "Eksportowanie…"
+                : activeTab === "vehicle_registration"
+                ? "Eksportuj CSV (Dowody)"
+                : "Eksportuj CSV (Polisy)"}
+            </span>
           </button>
+
           <button
             onClick={handleDownloadJson}
             disabled={loading}
-            className="flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-variant transition-colors font-label-bold text-label-bold shadow-xs cursor-pointer"
+            className="flex items-center gap-xs px-3.5 py-2 rounded-xl bg-surface-container-high text-on-surface hover:bg-surface-variant transition-colors font-semibold text-xs shadow-xs cursor-pointer"
+            title={
+              activeTab === "vehicle_registration"
+                ? "Pobierz dane dowodów rejestracyjnych w formacie JSON"
+                : "Pobierz dane polis w formacie JSON"
+            }
           >
-            <span className="material-symbols-outlined text-[18px]">code</span>
-            Pobierz JSON
+            <span className="material-symbols-outlined text-[16px]">code</span>
+            <span>
+              {activeTab === "vehicle_registration" ? "Pobierz JSON (Dowody)" : "Pobierz JSON (Polisy)"}
+            </span>
           </button>
         </div>
       </div>
 
-      {/* Pasek wyszukiwania i filtrów */}
+      {/* Pasek zakładek (Tabs) */}
+      <div className="flex items-center gap-2 border-b border-outline-variant pb-px">
+        <button
+          type="button"
+          onClick={() => handleTabChange("policy")}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-t-xl transition-colors cursor-pointer border-b-2 ${
+            activeTab === "policy"
+              ? "border-secondary text-secondary bg-secondary/5"
+              : "border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low"
+          }`}
+        >
+          <span className="material-symbols-outlined text-[20px]">description</span>
+          <span>Polisy ubezpieczeniowe</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              activeTab === "policy"
+                ? "bg-secondary text-on-secondary"
+                : "bg-surface-container text-on-surface-variant"
+            }`}
+          >
+            {policyRecords.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange("vehicle_registration")}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-t-xl transition-colors cursor-pointer border-b-2 ${
+            activeTab === "vehicle_registration"
+              ? "border-secondary text-secondary bg-secondary/5"
+              : "border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low"
+          }`}
+        >
+          <span className="material-symbols-outlined text-[20px]">directions_car</span>
+          <span>Dowody rejestracyjne</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              activeTab === "vehicle_registration"
+                ? "bg-secondary text-on-secondary"
+                : "bg-surface-container text-on-surface-variant"
+            }`}
+          >
+            {vehicleRecords.length}
+          </span>
+        </button>
+      </div>
+
+      {/* Pasek wyszukiwania i filtrów dostosowany do aktywnej zakładki */}
       <div className="bg-white rounded-xl border border-outline-variant p-md flex flex-wrap items-center gap-md shadow-sm">
         <div className="flex items-center gap-sm text-on-surface-variant font-label-bold text-label-bold">
           <span className="material-symbols-outlined text-[18px]">filter_list</span> Filtry
         </div>
 
-        {/* Wyszukiwarka po nazwie pliku */}
+        {/* Wyszukiwarka */}
         <div className="relative flex-1 min-w-[220px]">
           <span className="material-symbols-outlined absolute left-2.5 top-2 text-[18px] text-on-surface-variant pointer-events-none">
             search
@@ -546,17 +569,21 @@ export const BatchResultsView: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="Szukaj po nazwie pliku..."
+            placeholder={
+              activeTab === "policy"
+                ? "Szukaj po nazwie pliku, towarzystwie..."
+                : "Szukaj po nazwie pliku, nr rej, VIN..."
+            }
             className="w-full bg-surface-bright border border-outline-variant text-body-sm rounded-lg pl-9 pr-3 py-1.5 focus:ring-2 focus:ring-secondary focus:border-secondary outline-none placeholder:text-on-surface-variant/60"
           />
         </div>
 
-        {/* Filtr towarzystw ubezpieczeniowych */}
-        <div className="relative">
+        {/* Filtr towarzystw (Polisy) */}
+        {activeTab === "policy" && (
           <select
             value={filterInsurer}
             onChange={(e) => handleFilterInsurer(e.target.value)}
-            className="appearance-none bg-surface-bright border border-outline-variant text-body-sm rounded-lg pl-3 pr-8 py-1.5 focus:ring-2 focus:ring-secondary focus:border-secondary outline-none cursor-pointer"
+            className="bg-surface-bright border border-outline-variant text-xs rounded-lg pl-3 pr-8 py-1.5 focus:ring-2 focus:ring-secondary focus:border-secondary outline-none cursor-pointer"
           >
             <option value="">Wszystkie towarzystwa</option>
             {uniqueInsurers.map((ins) => (
@@ -565,26 +592,34 @@ export const BatchResultsView: React.FC = () => {
               </option>
             ))}
           </select>
-          <span className="material-symbols-outlined absolute right-2 top-2 text-[16px] pointer-events-none text-on-surface-variant">
-            arrow_drop_down
-          </span>
-        </div>
+        )}
+
+        {/* Filtr marek pojazdów (Dowody rejestracyjne) */}
+        {activeTab === "vehicle_registration" && (
+          <select
+            value={filterMake}
+            onChange={(e) => handleFilterMake(e.target.value)}
+            className="bg-surface-bright border border-outline-variant text-xs rounded-lg pl-3 pr-8 py-1.5 focus:ring-2 focus:ring-secondary focus:border-secondary outline-none cursor-pointer"
+          >
+            <option value="">Wszystkie marki</option>
+            {uniqueMakes.map((mk) => (
+              <option key={mk} value={mk}>
+                {mk}
+              </option>
+            ))}
+          </select>
+        )}
 
         {/* Filtr statusu SUCCESS / FAIL */}
-        <div className="relative">
-          <select
-            value={filterStatus}
-            onChange={(e) => handleFilterStatus(e.target.value)}
-            className="appearance-none bg-surface-bright border border-outline-variant text-body-sm rounded-lg pl-3 pr-8 py-1.5 focus:ring-2 focus:ring-secondary focus:border-secondary outline-none cursor-pointer"
-          >
-            <option value="">Wszystkie statusy</option>
-            <option value="success">SUCCESS (Odczytane)</option>
-            <option value="failed">FAIL (Błędy)</option>
-          </select>
-          <span className="material-symbols-outlined absolute right-2 top-2 text-[16px] pointer-events-none text-on-surface-variant">
-            arrow_drop_down
-          </span>
-        </div>
+        <select
+          value={filterStatus}
+          onChange={(e) => handleFilterStatus(e.target.value)}
+          className="bg-surface-bright border border-outline-variant text-xs rounded-lg pl-3 pr-8 py-1.5 focus:ring-2 focus:ring-secondary focus:border-secondary outline-none cursor-pointer"
+        >
+          <option value="">Wszystkie statusy</option>
+          <option value="success">SUCCESS (Odczytane)</option>
+          <option value="failed">FAIL (Błędy)</option>
+        </select>
 
         {isFiltered && (
           <span className="font-label-md text-label-md text-secondary bg-secondary/10 px-2 py-0.5 rounded">
@@ -602,159 +637,105 @@ export const BatchResultsView: React.FC = () => {
         )}
       </div>
 
-      {/* Tabela wyników */}
-      <div className="bg-white rounded-xl border border-outline-variant overflow-hidden shadow-sm flex flex-col">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-surface-bright border-b border-outline-variant sticky top-0 z-10">
-              <tr>
-                <th className="py-md px-md font-label-bold text-label-bold text-on-surface-variant whitespace-nowrap">
-                  <button
-                    className="flex items-center gap-xs cursor-pointer hover:text-on-surface transition-colors"
-                    onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
-                  >
-                    Nazwa pliku{" "}
-                    <span className="material-symbols-outlined text-[14px]">
-                      {sortDir === "desc" ? "arrow_downward" : "arrow_upward"}
-                    </span>
-                  </button>
-                </th>
-                <th className="py-md px-md font-label-bold text-label-bold text-on-surface-variant whitespace-nowrap">
-                  Towarzystwo
-                </th>
-                <th className="py-md px-md font-label-bold text-label-bold text-on-surface-variant text-right whitespace-nowrap">
-                  Składka
-                </th>
-                <th className="py-md px-md font-label-bold text-label-bold text-on-surface-variant whitespace-nowrap">
-                  Data odczytu
-                </th>
-                <th className="py-md px-md font-label-bold text-label-bold text-on-surface-variant whitespace-nowrap text-center">
-                  Status
-                </th>
-                <th className="py-md px-md font-label-bold text-label-bold text-on-surface-variant whitespace-nowrap text-center">
-                  Podgląd
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant/50">
-              {loading ? (
-                <SkeletonRows />
-              ) : paged.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-16 text-center">
-                    <span className="material-symbols-outlined text-4xl text-outline-variant block mb-sm">
-                      search_off
-                    </span>
-                    <p className="font-body-md text-body-md text-on-surface-variant">
-                      Brak rekordów spełniających wybrane kryteria filtrowania.
-                    </p>
-                    {isFiltered && (
-                      <button
-                        onClick={handleClearFilters}
-                        className="mt-sm text-secondary font-label-bold text-label-bold hover:underline cursor-pointer"
-                      >
-                        Wyczyść filtry
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ) : (
-                paged.map((record) => (
-                  <ResultRow
-                    key={record.id}
-                    record={record}
-                    onPreview={(rec) => setSelectedRecord(rec)}
-                  />
-                ))
-              )}
-            </tbody>
-          </table>
+      {/* Tabele wyników per wybrana zakładka */}
+      {loading ? (
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-12 text-center">
+          <div className="inline-block w-8 h-8 border-4 border-secondary border-t-transparent rounded-full animate-spin mb-3" />
+          <p className="text-sm font-medium text-on-surface">Ładowanie wyników paczki...</p>
         </div>
+      ) : activeTab === "policy" ? (
+        <PolicyResultsTab records={paged} onSelectRecord={setSelectedRecord} />
+      ) : (
+        <VehicleRegResultsTab records={paged} onSelectRecord={setSelectedRecord} />
+      )}
 
-        {/* Pasek dolny: Wybór liczby wierszy + Paginacja */}
-        {!loading && filtered.length > 0 && (
-          <div className="border-t border-outline-variant bg-surface-bright p-md flex items-center justify-between flex-wrap gap-md">
-            {/* Wybór liczby na stronę */}
-            <div className="flex items-center gap-sm">
-              <span className="font-body-sm text-body-sm text-on-surface-variant">
-                Wierszy na stronę:
-              </span>
-              <div className="relative">
-                <select
-                  value={pageSize}
-                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                  className="appearance-none bg-surface-bright border border-outline-variant text-body-sm rounded-lg pl-2.5 pr-7 py-1 focus:ring-2 focus:ring-secondary focus:border-secondary outline-none cursor-pointer"
-                >
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                </select>
-                <span className="material-symbols-outlined absolute right-1.5 top-1.5 text-[16px] pointer-events-none text-on-surface-variant">
-                  arrow_drop_down
-                </span>
-              </div>
-              <span className="font-body-sm text-body-sm text-on-surface-variant ml-md hidden sm:inline">
-                Wyświetlanie {startIdx}–{endIdx} z {filtered.length} wyników
-              </span>
-            </div>
-
-            {/* Przyciski stron */}
-            {totalPages > 1 && (
-              <div className="flex items-center gap-xs ml-auto">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="p-1 rounded-lg text-outline hover:bg-surface-variant disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                  aria-label="Poprzednia strona"
-                >
-                  <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-                </button>
-
-                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                  .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
-                  .reduce<(number | "...")[]>((acc, p, idx, arr) => {
-                    if (idx > 0 && p - (arr[idx - 1] as number) > 1) {
-                      acc.push("...");
-                    }
-                    acc.push(p);
-                    return acc;
-                  }, [])
-                  .map((p, idx) =>
-                    p === "..." ? (
-                      <span key={`dots-${idx}`} className="text-on-surface-variant px-1">
-                        ...
-                      </span>
-                    ) : (
-                      <button
-                        key={p}
-                        onClick={() => setPage(p as number)}
-                        className={`w-8 h-8 rounded-lg font-label-bold text-label-bold flex items-center justify-center transition-colors cursor-pointer ${
-                          p === page
-                            ? "bg-secondary text-white shadow-xs"
-                            : "text-on-surface-variant hover:bg-surface-container-low"
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    )
-                  )}
-
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="p-1 rounded-lg text-on-surface-variant hover:bg-surface-variant disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                  aria-label="Następna strona"
-                >
-                  <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-                </button>
-              </div>
-            )}
+      {/* Paginacja */}
+      {!loading && filtered.length > 0 && (
+        <div className="border border-outline-variant rounded-xl bg-white p-md flex items-center justify-between flex-wrap gap-md shadow-sm">
+          <div className="flex items-center gap-sm">
+            <span className="font-body-sm text-body-sm text-on-surface-variant">
+              Wierszy na stronę:
+            </span>
+            <select
+              value={pageSize}
+              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+              className="bg-surface-bright border border-outline-variant text-xs rounded-lg pl-2.5 pr-7 py-1 focus:ring-2 focus:ring-secondary focus:border-secondary outline-none cursor-pointer"
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+            <span className="font-body-sm text-body-sm text-on-surface-variant ml-md hidden sm:inline">
+              Wyświetlanie {startIdx}–{endIdx} z {filtered.length} wyników
+            </span>
           </div>
-        )}
-      </div>
 
-      {/* Modal ze szczegółami i surowym JSON-em */}
-      <DetailModal record={selectedRecord} onClose={() => setSelectedRecord(null)} />
+          {totalPages > 1 && (
+            <div className="flex items-center gap-xs ml-auto">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="p-1 rounded-lg text-outline hover:bg-surface-variant disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                aria-label="Poprzednia strona"
+              >
+                <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                .reduce<(number | "...")[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && p - (arr[idx - 1] as number) > 1) {
+                    acc.push("...");
+                  }
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, idx) =>
+                  p === "..." ? (
+                    <span key={`dots-${idx}`} className="text-on-surface-variant px-1">
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p as number)}
+                      className={`w-8 h-8 rounded-lg font-label-bold text-label-bold flex items-center justify-center transition-colors cursor-pointer ${
+                        p === page
+                          ? "bg-secondary text-white shadow-xs"
+                          : "text-on-surface-variant hover:bg-surface-container-low"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="p-1 rounded-lg text-on-surface-variant hover:bg-surface-variant disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                aria-label="Następna strona"
+              >
+                <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Dynamiczny modal podglądu zależny od rodzaju dokumentu */}
+      {selectedRecord &&
+        (selectedRecord.document_type === "vehicle_registration" ? (
+          <VehicleRegDetailCard
+            record={selectedRecord}
+            onClose={() => setSelectedRecord(null)}
+          />
+        ) : (
+          <DetailModal
+            record={selectedRecord}
+            onClose={() => setSelectedRecord(null)}
+          />
+        ))}
     </div>
   );
 };
