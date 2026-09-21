@@ -85,8 +85,8 @@ policyReader-web/
 | `src/components/ProgressBar.tsx` | ✅ Ukończono | Pasek postępu przetwarzania paczki z automatyczną kolorystyką na podstawie statusu |
 | `src/components/MetricCard.tsx` | ✅ Ukończono | Karta metryki Bento Grid z obsługą wartości, jednostek i stanu szkieletu ładowania |
 | `src/components/index.ts` | ✅ Ukończono | Centralny punkt eksportu komponentów UI i ich typów |
-| `src/pages/DashboardView.tsx` (`/`) | ✅ Ukończono | Widok Overview: Bento Grid (3 metryki), filtrowalna tabela Recent Batches z paginacją i linkami do `/jobs/{id}` |
-| `src/pages/UploadView.tsx` (`/upload`) | ✅ Ukończono | Strefa Drag & Drop, walidacja plików PDF (max 50MB), lista Selected Files, wysyłka POST /upload i przekierowanie |
+| `src/config/appConfig.ts` | ✅ Ukończono | Globalna konfiguracja limitów (maks. 200 plików na paczkę, maks. 50 MB na plik, domyślna paginacja) |
+| `src/pages/UploadView.tsx` (`/upload`) | ✅ Ukończono | Strefa Drag & Drop, limit do 200 plików (z ostrzeżeniami toast), wskaźnik zapełnienia paczki (Batch Capacity), wyszukiwarka po nazwie, paginacja (10/25/50), pasek akcji i przycisk Start Processing bezpośrednio nad listą |
 | `src/pages/BatchStatusView.tsx` (`/jobs/:id`) | ✅ Ukończono | Polling statusu (/jobs/{id}/status), animowany pasek postępu (progress-pulse), Bento Grid (4 liczniki), tabela Processing Log z tooltipami błędów OCR i warunkowym przyciskiem Batch Results |
 | `src/pages/BatchResultsView.tsx` (`/result/:id`) | ✅ Ukończono | Tabela wyników ekstrakcji polis: Bento-compatible layout, filtry (insurer, status), sortowanie daty, paginacja (5/str.), odznaki HIGH CONF./REVIEW, eksport CSV (API + fallback client-side), przycisk RESOLVE, skeleton loading |
 | `src/services/api.ts` | ✅ Ukończono | Rozszerzono o `getBatchResults()` (10 rek. demo) i `downloadBatchCsv()` (API + CSV client-side fallback) |
