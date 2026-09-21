@@ -465,7 +465,7 @@ export const UploadView: React.FC = () => {
                     setPageSize(Number(e.target.value));
                     setCurrentPage(1);
                   }}
-                  className="bg-surface border border-outline-variant rounded-lg px-2 py-1 text-body-sm focus:outline-none focus:border-secondary cursor-pointer"
+                  className="bg-surface border border-outline-variant rounded-lg pl-2.5 pr-8 py-1 text-body-sm focus:outline-none focus:border-secondary cursor-pointer"
                 >
                   <option value={10}>10</option>
                   <option value={25}>25</option>

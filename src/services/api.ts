@@ -284,15 +284,31 @@ export const apiService = {
     try {
       const results = await apiService.getBatchResults(batchId, tenantId);
       if (results && results.records) {
-        return results.records.map((r, index) => ({
-          id: r.id || `log-${index}-${batchId}`,
-          filename: r.filename,
-          document_type: r.towarzystwo || 'Policy Document',
-          file_size: r.file_size || 'PDF',
-          status: (r.status === 'failed' ? 'failed' : r.status === 'success' ? 'success' : 'pending') as import('../types/api').PolicyRecordStatus,
-          error_message: r.error_message || undefined,
-          ocr_used: r.ocr_used || false,
-        }));
+        return results.records.map((r, index) => {
+          let itemStatus: import('../types/api').PolicyRecordStatus = 'queued';
+          if (r.status === 'success') {
+            itemStatus = 'success';
+          } else if (r.status === 'failed') {
+            itemStatus = 'failed';
+          } else if (r.current_phase && r.current_phase !== 'queued') {
+            itemStatus = 'processing';
+          } else if (r.status === 'processing') {
+            itemStatus = 'processing';
+          } else {
+            itemStatus = 'queued';
+          }
+
+          return {
+            id: r.id || `log-${index}-${batchId}`,
+            filename: r.filename,
+            document_type: r.towarzystwo || 'Policy Document',
+            file_size: r.file_size || 'PDF',
+            status: itemStatus,
+            current_phase: (r.current_phase as import('../types/api').DocumentPhase) || (itemStatus === 'processing' ? 'ocr' : 'queued'),
+            error_message: r.error_message || undefined,
+            ocr_used: r.ocr_used || false,
+          };
+        });
       }
     } catch {
       // Fallback

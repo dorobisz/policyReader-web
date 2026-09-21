@@ -15,7 +15,7 @@ export type BatchStatus = 'pending' | 'processing' | 'completed' | 'failed';
 /**
  * Status przetwarzania pojedynczego dokumentu / rekordu polisy.
  */
-export type PolicyRecordStatus = 'pending' | 'success' | 'failed';
+export type PolicyRecordStatus = 'queued' | 'pending' | 'processing' | 'success' | 'failed';
 
 /**
  * Poziom pewności ekstrakcji danych (Confidence Score) prezentowany w widoku wyników.
@@ -88,10 +88,12 @@ export interface PolicyRecordResponse {
   towarzystwo: string | null;
   kwota_skladki: string | null;
   status: PolicyRecordStatus | string;
+  current_phase?: DocumentPhase | string | null;
   ocr_used: boolean;
   czas_procesu_sek: number | null;
   error_message: string | null;
   file_size?: string | null;
+  file_size_bytes?: number | null;
   created_at: string | null;
 }
 
@@ -155,8 +157,10 @@ export interface BatchProcessingLogItem {
   document_type?: string;
   file_size?: string;
   status: PolicyRecordStatus;
+  current_phase?: DocumentPhase | string | null;
   error_message?: string;
   ocr_used?: boolean;
+  retry_count?: number;
 }
 
 /**
