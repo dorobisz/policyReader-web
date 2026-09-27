@@ -7,6 +7,8 @@
 
 ## 2. IMPLEMENTATION PLAN & COMMIT WORKFLOW (MANDATORY STEPS)
 Gdy pojawi się prośba o realizację planu wdrożenia (lub jego kroków):
+* **Izolacja agentów (Worktree & Gałęzie robocze):** W scenariuszach równoległej pracy wielu agentów lub rozbudowanych zadań UI zaleca się pracę w dedykowanych przestrzeniach roboczych (`git worktree` lub dedykowane gałęzie / tryb `branch` / `share`), aby zapobiec wzajemnemu nadpisywaniu niescommitowanych zmian i konfliktom.
+* **Synchronizacja powrotna do gałęzi bazowej:** Po zweryfikowaniu i przetestowaniu kodu danego kroku, agent ma obowiązek w miarę możliwości scalić/przenieść zmiany (`git merge` / `git cherry-pick`) z powrotem do gałęzi bazowej, z której utworzono przestrzeń roboczą, zapewniając użytkownikowi natychmiastowy dostęp do zintegrowanego kodu w głównym katalogu roboczym. W razie nierozwiązywalnych konfliktów należy zachować gałąź roboczą i zaraportować konflikt.
 * **Git Commit po zmianach:** Po wykonaniu poprawek/zmian w kodzie dla danego kroku, natychmiast zrób lokalny git commit (`git commit -m "..."`). **NIE RÓB PUSHA (`git push`) do zdalnego repozytorium**.
 * **Format tytułu komita:** Jeśli realizujesz krok z planu, tytuł komita **MUSI ZAWSZE zaczynać się od numeru realizowanego kroku** (np. `Krok 2.2: Implementacja komponentu SideNavBar`, `Krok 2.2: Aktualizacja dokumentacji i planu`).
 * **Aktualizacja Planu:** Po zrobieniu komita zmień plik planu wdrożenia (np. `REACT_IMPLEMENTATION_PLAN.md` lub aktywny plan) i zaznacz realizowany krok jako wykonany (`[x]` / `✅ Ukończono`).
