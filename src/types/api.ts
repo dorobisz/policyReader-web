@@ -83,22 +83,72 @@ export type DocumentType = 'policy' | 'vehicle_registration';
  * Wyekstrahowane dane z dowodu rejestracyjnego pojazdu.
  */
 export interface VehicleRegistrationData {
-  numer_rejestracyjny?: string | null;
-  marka?: string | null;
-  typ?: string | null;
-  model?: string | null;
-  vin?: string | null;
-  data_pierwszej_rejestracji?: string | null;
-  rok_produkcji?: string | null;
-  pojemnosc_silnika_cm3?: string | null;
-  moc_silnika_kw?: string | null;
-  rodzaj_paliwa?: string | null;
-  dopuszczalna_masa_calkowita_kg?: string | null;
-  masa_wlasna_kg?: string | null;
-  liczba_miejsc?: string | null;
-  kategoria_pojazdu?: string | null;
+  // 1. Seria i numer dowodu rejestracyjnego
   nr_dowodu_rejestracyjnego?: string | null;
+  // 2. A – Numer rejestracyjny pojazdu
+  numer_rejestracyjny?: string | null;
+  // 3. B – Data pierwszej rejestracji pojazdu
+  data_pierwszej_rejestracji?: string | null;
+  // 4. C.1.1 – Nazwisko lub nazwa posiadacza dowodu
   wlasciciel?: string | null;
+  // 5. C.1.2 – Numer PESEL lub REGON posiadacza
+  c_1_2_pesel_regon?: string | null;
+  // 6. C.1.3 – Adres posiadacza dowodu
+  adres_wlasciciela?: string | null;
+  // 7. C.2.1 – Nazwisko lub nazwa właściciela pojazdu
+  c_2_1_wlasciciel?: string | null;
+  // 8. C.2.2 – PESEL lub REGON właściciela pojazdu
+  c_2_2_pesel_regon?: string | null;
+  // 9. C.2.3 – Adres właściciela pojazdu
+  c_2_3_adres?: string | null;
+  // 10. D.1 – Marka pojazdu
+  marka?: string | null;
+  // 11. D.2 – Typ pojazdu
+  typ?: string | null;
+  // 12. D.3 – Model handlowy pojazdu
+  model?: string | null;
+  // 13. E – Numer VIN / nadwozia
+  vin?: string | null;
+  // 14. F.1 – Maksymalna masa całkowita pojazdu (kg)
+  f_1_maksymalna_masa_kg?: string | null;
+  // 15. F.2 – Dopuszczalna masa całkowita pojazdu (kg)
+  dopuszczalna_masa_calkowita_kg?: string | null;
+  // 16. F.3 – Dopuszczalna masa całkowita zespołu pojazdów (kg)
+  f_3_dopuszczalna_masa_zespolu_kg?: string | null;
+  // 17. G – Masa własna pojazdu (kg)
+  masa_wlasna_kg?: string | null;
+  // 18. H – Okres ważności dowodu
+  h_okres_waznosci?: string | null;
+  // 19. I – Data wydania dowodu
+  i_data_wydania?: string | null;
+  // 20. J – Kategoria pojazdu
+  kategoria_pojazdu?: string | null;
+  // 21. K – Numer świadectwa homologacji
+  k_numer_homologacji?: string | null;
+  // 22. L – Liczba osi
+  l_liczba_osi?: string | null;
+  // 23. O.1 – Przyczepa z hamulcem (kg)
+  o_1_przyczepa_z_hamulcem_kg?: string | null;
+  // 24. O.2 – Przyczepa bez hamulca (kg)
+  o_2_przyczepa_bez_hamulca_kg?: string | null;
+  // 25. P.1 – Pojemność silnika (cm³)
+  pojemnosc_silnika_cm3?: string | null;
+  // 26. P.2 – Moc silnika (kW)
+  moc_silnika_kw?: string | null;
+  // 27. P.3 – Rodzaj paliwa
+  rodzaj_paliwa?: string | null;
+  // 28. Q – Stosunek mocy do masy własnej (kW/kg)
+  q_moc_do_masy?: string | null;
+  // 29. S.1 – Liczba miejsc siedzących
+  liczba_miejsc?: string | null;
+  // 30. S.2 – Liczba miejsc stojących
+  s_2_liczba_miejsc_stojacych?: string | null;
+  // 31. ADNOTACJE URZĘDOWE
+  adnotacje_urzedowe?: string | null;
+  // 32. BADANIE TECHNICZNE
+  termin_badania_technicznego?: string | null;
+  // Rok produkcji
+  rok_produkcji?: string | null;
   [key: string]: any;
 }
 

@@ -49,6 +49,11 @@ const DEFAULT_NAV_ITEMS: NavItem[] = [
     to: '/upload',
     icon: 'upload_file',
   },
+  {
+    label: 'Ustawienia',
+    to: '/settings',
+    icon: 'settings',
+  },
 ];
 
 const DEFAULT_USER: AppLayoutUser = {

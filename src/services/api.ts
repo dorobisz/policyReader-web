@@ -668,5 +668,45 @@ export const apiService = {
       throw new Error(errorData.detail || 'Nie udało się usunąć dokumentu z paczki.');
     }
   },
+
+  /**
+   * Pobranie konfiguracji tenanta (GET /settings)
+   */
+  async getSettings(tenantId = 'default'): Promise<{ tenant_id: string; config: Record<string, any> }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/settings`, {
+        headers: { 'X-Tenant-ID': tenantId },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      console.warn('Fallback do pamięci lokalnej dla ustawień:', e);
+      const cached = localStorage.getItem('broker-engine-settings');
+      return {
+        tenant_id: tenantId,
+        config: cached ? { vehicle_copy_fields: JSON.parse(cached) } : {},
+      };
+    }
+  },
+
+  /**
+   * Zapis trwałej konfiguracji tenanta w PostgreSQL (PUT /settings)
+   */
+  async saveSettings(config: Record<string, any>, tenantId = 'default'): Promise<void> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Tenant-ID': tenantId,
+        },
+        body: JSON.stringify({ config }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (e) {
+      console.warn('Błąd zapisu ustawień na serwerze, zachowano lokalnie:', e);
+    }
+  },
 };
+
 

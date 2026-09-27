@@ -8,6 +8,7 @@ import { DashboardView } from "./pages/DashboardView";
 import { UploadView } from "./pages/UploadView";
 import { BatchStatusView } from "./pages/BatchStatusView";
 import { BatchResultsView } from "./pages/BatchResultsView";
+import { SettingsView } from "./pages/SettingsView";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
             <Route path="upload" element={<ErrorBoundary><UploadView /></ErrorBoundary>} />
             <Route path="jobs/:batchId" element={<ErrorBoundary><BatchStatusView /></ErrorBoundary>} />
             <Route path="result/:batchId" element={<ErrorBoundary><BatchResultsView /></ErrorBoundary>} />
+            <Route path="settings" element={<ErrorBoundary><SettingsView /></ErrorBoundary>} />
           </Route>
         </Routes>
       </BrowserRouter>

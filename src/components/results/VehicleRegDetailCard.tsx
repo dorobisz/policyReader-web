@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PolicyRecord } from '../../types/api';
+import { useVehicleCopySettings } from '../../hooks/useVehicleCopySettings';
+import { VEHICLE_FIELD_DEFINITIONS, VEHICLE_SECTIONS } from '../../config/vehicleFields';
+import { VehicleCopyFieldsConfig } from '../settings/VehicleCopyFieldsConfig';
 
 interface VehicleRegDetailCardProps {
   record: PolicyRecord;
@@ -10,6 +13,9 @@ export const VehicleRegDetailCard: React.FC<VehicleRegDetailCardProps> = ({ reco
   const [copiedExcel, setCopiedExcel] = useState(false);
   const [copiedJson, setCopiedJson] = useState(false);
   const [showJson, setShowJson] = useState(false);
+  const [configOpen, setConfigOpen] = useState(false);
+  const [includeHeaders, setIncludeHeaders] = useState(false);
+  const { fields } = useVehicleCopySettings();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -22,49 +28,52 @@ export const VehicleRegDetailCard: React.FC<VehicleRegDetailCardProps> = ({ reco
   const d = record.extracted_data || {};
   const isSuccess = record.status === 'success';
 
-  const identityFields = [
-    { label: 'Numer rejestracyjny (A)', value: d.numer_rejestracyjny, isMono: true },
-    { label: 'Numer VIN (E)', value: d.vin, isMono: true },
-    { label: 'Marka pojazdu (D.1)', value: d.marka },
-    { label: 'Model / Wariant (D.3)', value: d.model },
-    { label: 'Typ pojazdu (D.2)', value: d.typ },
-    { label: 'Data 1. rejestracji (B)', value: d.data_pierwszej_rejestracji },
-    { label: 'Numer dowodu rej.', value: d.nr_dowodu_rejestracyjnego },
-    { label: 'Właściciel / Posiadacz (C.1)', value: d.wlasciciel },
-  ];
+  // Przygotowanie pól pogrupowanych według 5 sekcji
+  const sectionsData = useMemo(() => {
+    return VEHICLE_SECTIONS.map((section) => {
+      const sectionFields = VEHICLE_FIELD_DEFINITIONS.filter((f) => f.section === section.id).map(
+        (def) => {
+          const rawVal = d[def.key];
+          let formattedVal: string | null = null;
+          if (rawVal !== undefined && rawVal !== null && String(rawVal).trim() !== '') {
+            formattedVal = def.displaySuffix ? `${rawVal}${def.displaySuffix}` : String(rawVal);
+          }
+          return {
+            key: def.key,
+            label: def.label,
+            value: formattedVal,
+            isMono: def.isMono,
+          };
+        }
+      );
+      return {
+        ...section,
+        fields: sectionFields,
+      };
+    });
+  }, [d]);
 
-  const technicalFields = [
-    { label: 'Rok produkcji', value: d.rok_produkcji },
-    { label: 'Rodzaj paliwa (P.3)', value: d.rodzaj_paliwa },
-    { label: 'Pojemność silnika (P.1)', value: d.pojemnosc_silnika_cm3 ? `${d.pojemnosc_silnika_cm3} cm³` : null },
-    { label: 'Moc silnika (P.2)', value: d.moc_silnika_kw ? `${d.moc_silnika_kw} kW` : null },
-    { label: 'Dopuszczalna masa całk. (F.1)', value: d.dopuszczalna_masa_calkowita_kg ? `${d.dopuszczalna_masa_calkowita_kg} kg` : null },
-    { label: 'Masa własna (G)', value: d.masa_wlasna_kg ? `${d.masa_wlasna_kg} kg` : null },
-    { label: 'Liczba miejsc (S.1)', value: d.liczba_miejsc },
-    { label: 'Kategoria pojazdu (J)', value: d.kategoria_pojazdu },
-  ];
-
-  // Kopiowanie wiersza do Excela: tab-separated values w jednym wierszu
+  // Kopiowanie wiersza do Excela zgodnie z konfiguracją z bazy
   const handleCopyExcelRow = () => {
-    const values = [
-      record.filename || '',
-      d.numer_rejestracyjny || '',
-      d.marka || '',
-      d.model || '',
-      d.vin || '',
-      d.rok_produkcji || '',
-      d.data_pierwszej_rejestracji || '',
-      d.pojemnosc_silnika_cm3 || '',
-      d.moc_silnika_kw || '',
-      d.rodzaj_paliwa || '',
-      d.dopuszczalna_masa_calkowita_kg || '',
-      d.masa_wlasna_kg || '',
-      d.liczba_miejsc || '',
-      d.kategoria_pojazdu || '',
-      d.nr_dowodu_rejestracyjnego || '',
-      d.wlasciciel || '',
-    ];
-    navigator.clipboard.writeText(values.join('\t'));
+    const enabledFields = [...fields]
+      .filter((f) => f.enabled)
+      .sort((a, b) => a.order - b.order);
+
+    const values = enabledFields.map((f) => {
+      const val = d[f.key];
+      return val !== undefined && val !== null ? String(val) : '';
+    });
+
+    if (includeHeaders) {
+      const headers = enabledFields.map((f) => {
+        const def = VEHICLE_FIELD_DEFINITIONS.find((item) => item.key === f.key);
+        return def?.label ?? f.key;
+      });
+      navigator.clipboard.writeText(`${headers.join('\t')}\n${values.join('\t')}`);
+    } else {
+      navigator.clipboard.writeText(values.join('\t'));
+    }
+
     setCopiedExcel(true);
     setTimeout(() => setCopiedExcel(false), 2000);
   };
@@ -78,29 +87,34 @@ export const VehicleRegDetailCard: React.FC<VehicleRegDetailCardProps> = ({ reco
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl border border-outline-variant shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
+        className="bg-white rounded-2xl border border-outline-variant shadow-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Nagłówek modala */}
-        <div className="px-5 py-3.5 border-b border-outline-variant flex items-center justify-between bg-surface-bright">
+        <div className="px-6 py-4 border-b border-outline-variant flex items-center justify-between bg-surface-bright shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary">
-              <span className="material-symbols-outlined text-[22px]">directions_car</span>
+            <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary shrink-0">
+              <span className="material-symbols-outlined text-[24px]">directions_car</span>
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-on-surface">Dowód Rejestracyjny</h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base font-bold text-on-surface">Dowód Rejestracyjny</h3>
                 {d.numer_rejestracyjny && (
-                  <span className="px-2 py-0.5 rounded font-mono font-bold text-xs bg-surface-container text-on-surface border border-outline-variant">
+                  <span className="px-2.5 py-0.5 rounded-md font-mono font-bold text-xs bg-surface-container text-on-surface border border-outline-variant">
                     {d.numer_rejestracyjny}
                   </span>
                 )}
+                {d.nr_dowodu_rejestracyjnego && (
+                  <span className="px-2 py-0.5 rounded text-[11px] font-mono text-on-surface-variant bg-surface-container-low border border-outline-variant/60">
+                    DR: {d.nr_dowodu_rejestracyjnego}
+                  </span>
+                )}
                 <span
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
                     isSuccess
                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                       : 'bg-rose-50 text-rose-700 border border-rose-200'
@@ -110,7 +124,7 @@ export const VehicleRegDetailCard: React.FC<VehicleRegDetailCardProps> = ({ reco
                   {isSuccess ? 'SUCCESS' : 'FAIL'}
                 </span>
               </div>
-              <p className="text-[11px] text-on-surface-variant truncate max-w-md mt-0.5">
+              <p className="text-xs text-on-surface-variant truncate max-w-xl mt-0.5">
                 Plik: <span className="font-medium text-on-surface">{record.filename}</span>
                 {record.czas_procesu_sek != null && (
                   <span className="ml-2 text-on-surface-variant/70">
@@ -123,31 +137,44 @@ export const VehicleRegDetailCard: React.FC<VehicleRegDetailCardProps> = ({ reco
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors cursor-pointer"
+            className="p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors cursor-pointer"
             aria-label="Zamknij"
           >
-            <span className="material-symbols-outlined text-[20px]">close</span>
+            <span className="material-symbols-outlined text-[22px]">close</span>
           </button>
         </div>
 
-        {/* Pasek akcji zbiorczych (bez kopiowania pojedynczych pól) */}
-        <div className="px-5 py-2.5 bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+        {/* Pasek akcji zbiorczych */}
+        <div className="px-6 py-2.5 bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between gap-3 shrink-0 flex-wrap">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <button
               type="button"
               onClick={handleCopyExcelRow}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs ${
                 copiedExcel
                   ? 'bg-emerald-600 text-white'
-                  : 'bg-secondary text-on-secondary hover:bg-secondary/90 shadow-xs'
+                  : 'bg-secondary text-on-secondary hover:bg-secondary/90'
               }`}
-              title="Kopiuje wartości do wklejenia w 1 wiersz w Excelu (rozdzielane tabulatorem)"
+              title="Kopiuje wartości do wklejenia w Excelu (rozdzielane tabulatorem)"
             >
-              <span className="material-symbols-outlined text-[15px]">
+              <span className="material-symbols-outlined text-[16px]">
                 {copiedExcel ? 'check' : 'table_view'}
               </span>
               <span>{copiedExcel ? 'Skopiowano wiersz!' : 'Kopiuj wiersz do Excela'}</span>
             </button>
+
+            <label
+              className="flex items-center gap-1.5 text-xs text-on-surface-variant hover:text-on-surface cursor-pointer select-none px-2.5 py-1 rounded-lg hover:bg-surface-container-low transition-colors border border-transparent hover:border-outline-variant/40"
+              title="Gdy zaznaczone, do schowka zostanie dodany wiersz z tytułami kolumn"
+            >
+              <input
+                type="checkbox"
+                checked={includeHeaders}
+                onChange={(e) => setIncludeHeaders(e.target.checked)}
+                className="w-3.5 h-3.5 rounded border-outline-variant text-secondary focus:ring-secondary cursor-pointer"
+              />
+              <span>Z nagłówkami kolumn</span>
+            </label>
 
             <button
               type="button"
@@ -161,20 +188,32 @@ export const VehicleRegDetailCard: React.FC<VehicleRegDetailCardProps> = ({ reco
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowJson((prev) => !prev)}
-            className="text-xs font-medium text-secondary hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[15px]">data_object</span>
-            <span>{showJson ? 'Ukryj JSON' : 'Pokaż surowy JSON'}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowJson((prev) => !prev)}
+              className="text-xs font-medium text-secondary hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[15px]">data_object</span>
+              <span>{showJson ? 'Ukryj JSON' : 'Pokaż surowy JSON'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setConfigOpen(true)}
+              className="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-secondary transition-colors cursor-pointer flex items-center justify-center border border-outline-variant/60"
+              title="Konfiguracja pól kopiowania do Excela"
+              aria-label="Konfiguracja pól kopiowania do Excela"
+            >
+              <span className="material-symbols-outlined text-[18px]">settings</span>
+            </button>
+          </div>
         </div>
 
-        {/* Zwięzłe i czytelne zestawienie danych w 2 kolumnach */}
-        <div className="p-5 overflow-y-auto space-y-4">
+        {/* Zawartość: Wszystkie 32 pola ułożone w czytelnym układzie sekcji */}
+        <div className="p-6 overflow-y-auto space-y-5 flex-1 bg-surface-container-lowest/40">
           {!isSuccess && record.error_message && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2">
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2">
               <span className="material-symbols-outlined text-rose-600 text-[18px] shrink-0 mt-0.5">
                 error
               </span>
@@ -185,60 +224,89 @@ export const VehicleRegDetailCard: React.FC<VehicleRegDetailCardProps> = ({ reco
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Kolumna 1: Identyfikacja i rejestracja */}
-            <div className="bg-surface-bright rounded-xl border border-outline-variant/60 p-3.5 flex flex-col">
-              <div className="text-[11px] font-bold text-secondary uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-outline-variant/40 pb-1.5">
-                <span className="material-symbols-outlined text-[15px]">badge</span>
-                <span>Identyfikacja i rejestracja</span>
+          {/* Siatka sekcji: 2 rzędy / kolumny dla przejrzystości */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {sectionsData.slice(0, 4).map((sec) => (
+              <div
+                key={sec.id}
+                className="bg-white rounded-xl border border-outline-variant shadow-xs p-4 flex flex-col"
+              >
+                <div className="text-xs font-bold text-secondary uppercase tracking-wider mb-2.5 flex items-center gap-2 border-b border-outline-variant/50 pb-2">
+                  <span className="material-symbols-outlined text-[17px]">{sec.icon}</span>
+                  <span>{sec.title}</span>
+                </div>
+                <div className="divide-y divide-outline-variant/30 flex-1">
+                  {sec.fields.map(({ key, label, value, isMono }) => (
+                    <div key={key} className="flex items-start justify-between text-xs py-2 gap-3">
+                      <span className="text-on-surface-variant font-medium text-[11.5px] shrink-0 max-w-[200px]">
+                        {label}
+                      </span>
+                      <span
+                        className={`text-on-surface font-semibold text-right break-words max-w-[260px] ${
+                          isMono ? 'font-mono' : ''
+                        }`}
+                        title={value || ''}
+                      >
+                        {value ? (
+                          value
+                        ) : (
+                          <span className="text-on-surface-variant/40 font-normal italic">—</span>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="divide-y divide-outline-variant/20">
-                {identityFields.map(({ label, value, isMono }) => (
-                  <div key={label} className="flex items-center justify-between text-xs py-1.5 gap-2">
-                    <span className="text-on-surface-variant font-medium text-[11px] shrink-0">
-                      {label}
-                    </span>
-                    <span
-                      className={`text-on-surface font-semibold text-right truncate max-w-[200px] ${
-                        isMono ? 'font-mono' : ''
-                      }`}
-                      title={value || ''}
-                    >
-                      {value || <span className="text-on-surface-variant/40 font-normal italic">—</span>}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Kolumna 2: Parametry techniczne */}
-            <div className="bg-surface-bright rounded-xl border border-outline-variant/60 p-3.5 flex flex-col">
-              <div className="text-[11px] font-bold text-secondary uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-outline-variant/40 pb-1.5">
-                <span className="material-symbols-outlined text-[15px]">settings</span>
-                <span>Parametry techniczne</span>
-              </div>
-              <div className="divide-y divide-outline-variant/20">
-                {technicalFields.map(({ label, value }) => (
-                  <div key={label} className="flex items-center justify-between text-xs py-1.5 gap-2">
-                    <span className="text-on-surface-variant font-medium text-[11px] shrink-0">
-                      {label}
-                    </span>
-                    <span
-                      className="text-on-surface font-semibold text-right truncate max-w-[200px]"
-                      title={value || ''}
-                    >
-                      {value || <span className="text-on-surface-variant/40 font-normal italic">—</span>}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
 
-          {/* Opcjonalny widok surowego JSON */}
+          {/* Sekcja 5: Ważność i adnotacje (na pełną szerokość na dole) */}
+          {sectionsData[4] && (
+            <div className="bg-white rounded-xl border border-outline-variant shadow-xs p-4">
+              <div className="text-xs font-bold text-secondary uppercase tracking-wider mb-2.5 flex items-center gap-2 border-b border-outline-variant/50 pb-2">
+                <span className="material-symbols-outlined text-[17px]">
+                  {sectionsData[4].icon}
+                </span>
+                <span>{sectionsData[4].title}</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {sectionsData[4].fields.map(({ key, label, value, isMono }) => (
+                  <div
+                    key={key}
+                    className="p-3 rounded-lg bg-surface-bright border border-outline-variant/40 flex flex-col justify-between"
+                  >
+                    <span className="text-on-surface-variant font-medium text-[11px] mb-1">
+                      {label}
+                    </span>
+                    <span
+                      className={`text-xs font-semibold text-on-surface break-words ${
+                        isMono ? 'font-mono' : ''
+                      }`}
+                    >
+                      {value ? (
+                        value
+                      ) : (
+                        <span className="text-on-surface-variant/40 font-normal italic">—</span>
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Opcjonalny podgląd surowego JSON */}
           {showJson && (
             <div className="pt-2 border-t border-outline-variant/40">
-              <pre className="bg-slate-900 text-slate-100 p-3.5 rounded-xl font-mono text-xs overflow-x-auto max-h-48 select-all border border-slate-800 shadow-inner">
+              <div className="flex items-center justify-between pb-2">
+                <span className="text-xs font-bold text-on-surface uppercase tracking-wider">
+                  Surowy obiekt JSON
+                </span>
+                <span className="text-[11px] text-on-surface-variant font-mono">
+                  {Object.keys(d).length} pól
+                </span>
+              </div>
+              <pre className="bg-slate-900 text-slate-100 p-4 rounded-xl font-mono text-xs overflow-x-auto max-h-56 select-all border border-slate-800 shadow-inner">
                 {JSON.stringify(d, null, 2)}
               </pre>
             </div>
@@ -246,7 +314,10 @@ export const VehicleRegDetailCard: React.FC<VehicleRegDetailCardProps> = ({ reco
         </div>
 
         {/* Stopka modala */}
-        <div className="px-5 py-3 border-t border-outline-variant bg-surface-bright flex justify-end">
+        <div className="px-6 py-3 border-t border-outline-variant bg-surface-bright flex justify-between items-center shrink-0">
+          <span className="text-[11px] text-on-surface-variant">
+            Łącznie: 32 pola dowodu rejestracyjnego + rok produkcji
+          </span>
           <button
             type="button"
             onClick={onClose}
@@ -256,6 +327,9 @@ export const VehicleRegDetailCard: React.FC<VehicleRegDetailCardProps> = ({ reco
           </button>
         </div>
       </div>
+
+      {/* Modal konfiguracji pól kopiowania */}
+      <VehicleCopyFieldsConfig isOpen={configOpen} onClose={() => setConfigOpen(false)} />
     </div>
   );
 };
