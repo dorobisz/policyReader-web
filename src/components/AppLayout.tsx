@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { SideNavBar } from './SideNavBar';
 
 export interface AppLayoutUser {
@@ -106,15 +106,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             </div>
 
             <div className="flex items-center gap-md">
-              <Link
-                to="/settings"
-                className="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors flex items-center justify-center cursor-pointer"
-                title="Ustawienia systemu"
-                aria-label="Przejdź do ustawień"
-              >
-                <span className="material-symbols-outlined text-[20px]">settings</span>
-              </Link>
-
               {tenantName && (
                 <span className="text-on-surface-variant font-body-sm hidden sm:inline-block">
                   Tenant: <span className="font-medium text-on-surface">{tenantName}</span>

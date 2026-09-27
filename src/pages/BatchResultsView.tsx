@@ -6,6 +6,7 @@ import { DocumentRecordResponse, DocumentType, PolicyRecord } from "../types/api
 import { PolicyResultsTab } from "../components/results/PolicyResultsTab";
 import { VehicleRegResultsTab } from "../components/results/VehicleRegResultsTab";
 import { VehicleRegDetailCard } from "../components/results/VehicleRegDetailCard";
+import { VehicleCopyFieldsConfig } from "../components/settings/VehicleCopyFieldsConfig";
 
 
 function formatFileSize(bytesOrStr: number | string | null | undefined): string {
@@ -245,6 +246,7 @@ export const BatchResultsView: React.FC = () => {
 
   // Zakładki (Tabs) & Eksport (uzależniony od aktywnej zakładki)
   const [activeTab, setActiveTab] = useState<DocumentType>("policy");
+  const [vehicleConfigOpen, setVehicleConfigOpen] = useState(false);
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState("");
@@ -454,14 +456,18 @@ export const BatchResultsView: React.FC = () => {
             Wyniki paczki (Batch Results)
           </h2>
           {loading ? (
-            <div className="h-5 w-80 bg-surface-container rounded animate-pulse mt-sm" />
+            <div className="h-10 w-80 bg-surface-container rounded animate-pulse mt-sm" />
           ) : (
-            <p className="font-body-md text-body-md text-on-surface-variant mt-sm">
-              Przetworzono <strong className="text-on-surface">{processedFiles}</strong> z{" "}
-              <strong className="text-on-surface">{totalFiles}</strong> dokumentów &middot; Paczka{" "}
-              <span className="font-mono text-secondary">#{batchId}</span> &middot; Skuteczność:{" "}
-              <strong className="text-emerald-600">{successRate}%</strong>
-            </p>
+            <div className="font-body-md text-body-md text-on-surface-variant mt-sm">
+              <p>
+                Przetworzono <strong className="text-on-surface">{processedFiles}</strong> z{" "}
+                <strong className="text-on-surface">{totalFiles}</strong> dokumentów &middot; Paczka{" "}
+                <span className="font-mono text-secondary">#{batchId}</span>
+              </p>
+              <p className="mt-0.5">
+                Skuteczność: <strong className="text-emerald-600">{successRate}%</strong>
+              </p>
+            </div>
           )}
         </div>
 
@@ -504,6 +510,18 @@ export const BatchResultsView: React.FC = () => {
               {activeTab === "vehicle_registration" ? "Pobierz JSON (Dowody)" : "Pobierz JSON (Polisy)"}
             </span>
           </button>
+
+          {activeTab === "vehicle_registration" && (
+            <button
+              type="button"
+              onClick={() => setVehicleConfigOpen(true)}
+              className="p-2 rounded-xl border border-outline-variant bg-white text-on-surface hover:bg-surface-container-low hover:text-secondary transition-colors cursor-pointer shadow-xs flex items-center justify-center"
+              title="Konfiguruj kolumny eksportu CSV / kopiowania"
+              aria-label="Konfiguracja kolumn eksportu CSV"
+            >
+              <span className="material-symbols-outlined text-[18px]">settings</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -736,6 +754,12 @@ export const BatchResultsView: React.FC = () => {
             onClose={() => setSelectedRecord(null)}
           />
         ))}
+
+      {/* Modal konfiguracji kolumn dowodu rejestracyjnego (dla CSV i schowka) */}
+      <VehicleCopyFieldsConfig
+        isOpen={vehicleConfigOpen}
+        onClose={() => setVehicleConfigOpen(false)}
+      />
     </div>
   );
 };

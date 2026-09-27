@@ -5,6 +5,7 @@ import {
   BatchUploadResponse,
   StatsMetrics,
 } from '../types/api';
+import { CopyFieldConfig, DEFAULT_COPY_CONFIG, VEHICLE_FIELD_DEFINITIONS } from '../config/vehicleFields';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1/policies';
 const LOCAL_STORAGE_BATCHES_KEY = 'brokerengine_saved_batches';
@@ -499,32 +500,33 @@ export const apiService = {
 
     let csvContent = '';
     if (isVehicle) {
-      const header = 'nazwa_pliku;nr_rejestracyjny;marka;model;vin;rok_produkcji;data_pierwszej_rejestracji;pojemnosc_cm3;moc_kw;paliwo;dopuszczalna_masa_kg;masa_wlasna_kg;liczba_miejsc;kategoria;nr_dowodu;wlasciciel;status_przetwarzania;czas_procesu_sek;error_message';
+      let activeFields: CopyFieldConfig[] = DEFAULT_COPY_CONFIG.filter((f) => f.enabled);
+      try {
+        const cached = localStorage.getItem('broker-engine-settings');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            activeFields = parsed
+              .filter((f: CopyFieldConfig) => f.enabled)
+              .sort((a: CopyFieldConfig, b: CopyFieldConfig) => a.order - b.order);
+          }
+        }
+      } catch {}
+
+      // Eksportujemy WYŁĄCZNIE skonfigurowane kolumny
+      const headers = activeFields.map((f) => {
+        const def = VEHICLE_FIELD_DEFINITIONS.find((item) => item.key === f.key);
+        return def?.label ?? f.key;
+      });
+
       const rows = filteredData.map((r) => {
         const d = r.extracted_data || {};
-        return [
-          r.filename ?? '',
-          d.numer_rejestracyjny ?? '',
-          d.marka ?? '',
-          d.model ?? '',
-          d.vin ?? '',
-          d.rok_produkcji ?? '',
-          d.data_pierwszej_rejestracji ?? '',
-          d.pojemnosc_silnika_cm3 ?? '',
-          d.moc_silnika_kw ?? '',
-          d.rodzaj_paliwa ?? '',
-          d.dopuszczalna_masa_calkowita_kg ?? '',
-          d.masa_wlasna_kg ?? '',
-          d.liczba_miejsc ?? '',
-          d.kategoria_pojazdu ?? '',
-          d.nr_dowodu_rejestracyjnego ?? '',
-          d.wlasciciel ?? '',
-          r.status ?? '',
-          r.czas_procesu_sek != null ? String(r.czas_procesu_sek).replace('.', ',') : '',
-          r.error_message ?? '',
-        ].join(';');
+        return activeFields
+          .map((f) => (d[f.key] !== undefined && d[f.key] !== null ? String(d[f.key]) : ''))
+          .join(';');
       });
-      csvContent = BOM + [header, ...rows].join('\n');
+
+      csvContent = BOM + [headers.join(';'), ...rows].join('\n');
     } else {
       const header = 'nazwa_pliku;towarzystwo;kwota_skladki;status_przetwarzania;ocr_used;czas_procesu_sek;error_message';
       const rows = filteredData.map((r) => [
