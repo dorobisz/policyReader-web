@@ -339,7 +339,20 @@ export const apiService = {
       // Fallback do danych demonstracyjnych
     }
 
-    // Bogate dane demonstracyjne z polimorfizmem JSONB
+    const isInitialDemo = INITIAL_MOCK_BATCHES.some((b) => b.batch_id === batchId);
+    if (!isInitialDemo) {
+      return {
+        batch_id: batchId,
+        tenant_id: tenantId,
+        status: 'completed',
+        total_files: 0,
+        processed_files: 0,
+        failed_files: 0,
+        records: [],
+      };
+    }
+
+    // Bogate dane demonstracyjne z polimorfizmem JSONB (tylko dla wstępnych paczek demo)
     return {
       batch_id: batchId,
       tenant_id: tenantId,
@@ -590,12 +603,18 @@ export const apiService = {
           remaining_files: data.total_files,
         });
         return data;
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Błąd serwera (${response.status})`);
       }
     } catch (err) {
+      if (err instanceof Error && !err.message.includes('Failed to fetch') && !err.message.includes('NetworkError') && !err.message.includes('Load failed')) {
+        throw err;
+      }
       console.warn('API upload error, using local fallback:', err);
     }
 
-    // Fallback generowania paczki lokalnie
+    // Fallback generowania paczki lokalnie (wyłącznie w przypadku całkowitego braku łączności sieciowej)
     const generatedId = `${Math.random().toString(36).substring(2, 6)}-${Math.random().toString(36).substring(2, 6)}-${Math.random().toString(36).substring(2, 6)}`;
     const newBatch: Batch = {
       batch_id: generatedId,
