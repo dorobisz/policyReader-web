@@ -68,6 +68,7 @@ export const VEHICLE_FIELD_DEFINITIONS: VehicleFieldDef[] = [
   { key: 'dopuszczalna_masa_calkowita_kg', label: 'Dopuszczalna masa całk. (F.2)', section: 'masses', displaySuffix: ' kg' },
   { key: 'f_3_dopuszczalna_masa_zespolu_kg', label: 'DMC zespołu pojazdów (F.3)', section: 'masses', displaySuffix: ' kg' },
   { key: 'masa_wlasna_kg', label: 'Masa własna (G)', section: 'masses', displaySuffix: ' kg' },
+  { key: 'dopuszczalna_ladownosc_kg', label: 'Dopuszczalna ładowność', section: 'masses', displaySuffix: ' kg' },
   { key: 'l_liczba_osi', label: 'Liczba osi (L)', section: 'masses' },
   { key: 'o_1_przyczepa_z_hamulcem_kg', label: 'Przyczepa z hamulcem (O.1)', section: 'masses', displaySuffix: ' kg' },
   { key: 'o_2_przyczepa_bez_hamulca_kg', label: 'Przyczepa bez hamulca (O.2)', section: 'masses', displaySuffix: ' kg' },

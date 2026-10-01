@@ -119,6 +119,8 @@ export interface VehicleRegistrationData {
   f_3_dopuszczalna_masa_zespolu_kg?: string | null;
   // 17. G – Masa własna pojazdu (kg)
   masa_wlasna_kg?: string | null;
+  // Dopuszczalna ładowność pojazdu (kg)
+  dopuszczalna_ladownosc_kg?: string | null;
   // 18. H – Okres ważności dowodu
   h_okres_waznosci?: string | null;
   // 19. I – Data wydania dowodu
