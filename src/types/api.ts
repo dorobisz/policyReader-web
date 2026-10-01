@@ -279,3 +279,17 @@ export interface ApiError {
   message: string;
   details?: unknown;
 }
+
+export interface SystemLimits {
+  max_file_size_mb: number;
+  max_files_per_batch: number;
+  retention_db_days_default: number;
+  ocr_dpi_default: number;
+  pages_to_scan_default: number;
+}
+
+export interface TenantConfigResponse {
+  tenant_id: string;
+  config: Record<string, any>;
+  system_limits?: SystemLimits;
+}

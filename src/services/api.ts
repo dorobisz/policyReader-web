@@ -693,7 +693,7 @@ export const apiService = {
   /**
    * Pobranie konfiguracji tenanta (GET /settings)
    */
-  async getSettings(tenantId = 'default'): Promise<{ tenant_id: string; config: Record<string, any> }> {
+  async getSettings(tenantId = 'default'): Promise<import('../types/api').TenantConfigResponse> {
     try {
       const res = await fetch(`${API_BASE_URL}/settings`, {
         headers: { 'X-Tenant-ID': tenantId },
