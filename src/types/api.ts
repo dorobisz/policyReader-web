@@ -107,6 +107,8 @@ export interface VehicleRegistrationData {
   typ?: string | null;
   // 12. D.3 – Model handlowy pojazdu
   model?: string | null;
+  // Rodzaj pojazdu (np. SAMOCHÓD OSOBOWY, SAMOCHÓD CIĘŻAROWY)
+  rodzaj_pojazdu?: string | null;
   // 13. E – Numer VIN / nadwozia
   vin?: string | null;
   // 14. F.1 – Maksymalna masa całkowita pojazdu (kg)

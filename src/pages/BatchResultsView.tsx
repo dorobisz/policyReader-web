@@ -252,6 +252,7 @@ export const BatchResultsView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterInsurer, setFilterInsurer] = useState("");
   const [filterMake, setFilterMake] = useState("");
+  const [filterVehicleType, setFilterVehicleType] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [sortDir] = useState<"asc" | "desc">("desc");
 
@@ -308,6 +309,11 @@ export const BatchResultsView: React.FC = () => {
     return Array.from(s).sort();
   }, [vehicleRecords]);
 
+  const uniqueVehicleTypes = useMemo(() => {
+    const s = new Set(vehicleRecords.map((r) => r.extracted_data?.rodzaj_pojazdu ?? "").filter(Boolean));
+    return Array.from(s).sort();
+  }, [vehicleRecords]);
+
   // Filtrowanie rekordów dla aktualnie wybranej zakładki
   const currentTabRecords = activeTab === "policy" ? policyRecords : vehicleRecords;
 
@@ -321,7 +327,10 @@ export const BatchResultsView: React.FC = () => {
         const regMatch = d.numer_rejestracyjny?.toLowerCase().includes(q);
         const vinMatch = d.vin?.toLowerCase().includes(q);
         const companyMatch = d.towarzystwo?.toLowerCase().includes(q);
-        return fnameMatch || regMatch || vinMatch || companyMatch;
+        const makeMatch = d.marka?.toLowerCase().includes(q);
+        const modelMatch = d.model?.toLowerCase().includes(q);
+        const vehicleTypeMatch = d.rodzaj_pojazdu?.toLowerCase().includes(q);
+        return fnameMatch || regMatch || vinMatch || companyMatch || makeMatch || modelMatch || vehicleTypeMatch;
       });
     }
 
@@ -330,6 +339,9 @@ export const BatchResultsView: React.FC = () => {
     }
     if (activeTab === "vehicle_registration" && filterMake) {
       result = result.filter((r) => r.extracted_data?.marka === filterMake);
+    }
+    if (activeTab === "vehicle_registration" && filterVehicleType) {
+      result = result.filter((r) => r.extracted_data?.rodzaj_pojazdu === filterVehicleType);
     }
 
     if (filterStatus === "success") result = result.filter((r) => r.status === "success");
@@ -341,7 +353,7 @@ export const BatchResultsView: React.FC = () => {
       return sortDir === "desc" ? db - da : da - db;
     });
     return result;
-  }, [currentTabRecords, searchQuery, filterInsurer, filterMake, filterStatus, sortDir, activeTab]);
+  }, [currentTabRecords, searchQuery, filterInsurer, filterMake, filterVehicleType, filterStatus, sortDir, activeTab]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = useMemo(
@@ -355,6 +367,7 @@ export const BatchResultsView: React.FC = () => {
     setSearchQuery("");
     setFilterInsurer("");
     setFilterMake("");
+    setFilterVehicleType("");
     setFilterStatus("");
   };
 
@@ -370,6 +383,10 @@ export const BatchResultsView: React.FC = () => {
     setFilterMake(v);
     setPage(1);
   };
+  const handleFilterVehicleType = (v: string) => {
+    setFilterVehicleType(v);
+    setPage(1);
+  };
   const handleFilterStatus = (v: string) => {
     setFilterStatus(v);
     setPage(1);
@@ -382,11 +399,12 @@ export const BatchResultsView: React.FC = () => {
     setSearchQuery("");
     setFilterInsurer("");
     setFilterMake("");
+    setFilterVehicleType("");
     setFilterStatus("");
     setPage(1);
   };
 
-  const isFiltered = Boolean(searchQuery.trim() || filterInsurer || filterMake || filterStatus);
+  const isFiltered = Boolean(searchQuery.trim() || filterInsurer || filterMake || filterVehicleType || filterStatus);
 
   const successCount = allRecords.filter((r) => r.status === "success").length;
   const successRate =
@@ -590,7 +608,7 @@ export const BatchResultsView: React.FC = () => {
             placeholder={
               activeTab === "policy"
                 ? "Szukaj po nazwie pliku, towarzystwie..."
-                : "Szukaj po nazwie pliku, nr rej, VIN..."
+                : "Szukaj po nazwie pliku, nr rej, marce, modelu, rodzaju, VIN..."
             }
             className="w-full bg-surface-bright border border-outline-variant text-body-sm rounded-lg pl-9 pr-3 py-1.5 focus:ring-2 focus:ring-secondary focus:border-secondary outline-none placeholder:text-on-surface-variant/60"
           />
@@ -614,18 +632,33 @@ export const BatchResultsView: React.FC = () => {
 
         {/* Filtr marek pojazdów (Dowody rejestracyjne) */}
         {activeTab === "vehicle_registration" && (
-          <select
-            value={filterMake}
-            onChange={(e) => handleFilterMake(e.target.value)}
-            className="bg-surface-bright border border-outline-variant text-xs rounded-lg pl-3 pr-8 py-1.5 focus:ring-2 focus:ring-secondary focus:border-secondary outline-none cursor-pointer"
-          >
-            <option value="">Wszystkie marki</option>
-            {uniqueMakes.map((mk) => (
-              <option key={mk} value={mk}>
-                {mk}
-              </option>
-            ))}
-          </select>
+          <>
+            <select
+              value={filterMake}
+              onChange={(e) => handleFilterMake(e.target.value)}
+              className="bg-surface-bright border border-outline-variant text-xs rounded-lg pl-3 pr-8 py-1.5 focus:ring-2 focus:ring-secondary focus:border-secondary outline-none cursor-pointer"
+            >
+              <option value="">Wszystkie marki</option>
+              {uniqueMakes.map((mk) => (
+                <option key={mk} value={mk}>
+                  {mk}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filterVehicleType}
+              onChange={(e) => handleFilterVehicleType(e.target.value)}
+              className="bg-surface-bright border border-outline-variant text-xs rounded-lg pl-3 pr-8 py-1.5 focus:ring-2 focus:ring-secondary focus:border-secondary outline-none cursor-pointer"
+            >
+              <option value="">Wszystkie rodzaje pojazdów</option>
+              {uniqueVehicleTypes.map((vt) => (
+                <option key={vt} value={vt}>
+                  {vt}
+                </option>
+              ))}
+            </select>
+          </>
         )}
 
         {/* Filtr statusu SUCCESS / FAIL */}

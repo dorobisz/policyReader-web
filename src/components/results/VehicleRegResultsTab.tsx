@@ -28,6 +28,7 @@ export const VehicleRegResultsTab: React.FC<VehicleRegResultsTabProps> = ({
             <tr className="border-b border-outline-variant bg-surface-container-low text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">
               <th className="py-2.5 px-3.5">Nr rejestracyjny</th>
               <th className="py-2.5 px-3.5">Marka i model</th>
+              <th className="py-2.5 px-3.5">Rodzaj pojazdu</th>
               <th className="py-2.5 px-3.5">Numer VIN</th>
               <th className="py-2.5 px-3.5 text-center">Rok prod.</th>
               <th className="py-2.5 px-3.5 text-center">Status</th>
@@ -41,6 +42,7 @@ export const VehicleRegResultsTab: React.FC<VehicleRegResultsTabProps> = ({
               const make = d.marka || '';
               const model = d.model || '';
               const makeModel = `${make} ${model}`.trim() || '—';
+              const vehicleType = d.rodzaj_pojazdu || '—';
               const vin = d.vin || '—';
               const year = d.rok_produkcji || '—';
               const isSuccess = record.status === 'success';
@@ -66,6 +68,15 @@ export const VehicleRegResultsTab: React.FC<VehicleRegResultsTabProps> = ({
                   </td>
                   <td className="py-2.5 px-3.5 font-medium text-on-surface">
                     {makeModel}
+                  </td>
+                  <td className="py-2.5 px-3.5">
+                    {d.rodzaj_pojazdu ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-surface-container text-on-surface border border-outline-variant/60">
+                        {vehicleType}
+                      </span>
+                    ) : (
+                      <span className="text-on-surface-variant/50">—</span>
+                    )}
                   </td>
                   <td className="py-2.5 px-3.5 font-mono text-xs text-on-surface-variant tracking-wider">
                     {vin}

@@ -163,7 +163,7 @@ export const SettingsView: React.FC = () => {
                 <div>
                   <p className="text-sm font-medium text-on-surface">Pola kopiowane do Excela oraz eksportu CSV</p>
                   <p className="text-xs text-on-surface-variant mt-0.5">
-                    Wybierz, które spośród 32 urzędowych rubryk PWPW i w jakiej kolejności mają trafiać do schowka („Kopiuj wiersz do Excela”) oraz do pobieranego pliku CSV.
+                    Wybierz, które spośród 33 urzędowych rubryk PWPW i w jakiej kolejności mają trafiać do schowka („Kopiuj wiersz do Excela”) oraz do pobieranego pliku CSV.
                   </p>
                   <p className="text-xs text-on-surface-variant mt-2 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>

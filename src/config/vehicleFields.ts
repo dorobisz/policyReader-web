@@ -1,6 +1,6 @@
 /**
  * Definicje pól dowodu rejestracyjnego.
- * Centralne źródło prawdy dla widoków oraz konfiguracji kopiowania (32 oficjalne pola + rok produkcji).
+ * Centralne źródło prawdy dla widoków oraz konfiguracji kopiowania (33 oficjalne pola + rok produkcji).
  */
 
 export type VehicleSection = 'registration' | 'owner' | 'technical' | 'masses' | 'validity';
@@ -55,6 +55,7 @@ export const VEHICLE_FIELD_DEFINITIONS: VehicleFieldDef[] = [
   { key: 'marka', label: 'Marka pojazdu (D.1)', section: 'technical' },
   { key: 'typ', label: 'Typ pojazdu / wersja (D.2)', section: 'technical' },
   { key: 'model', label: 'Model pojazdu (D.3)', section: 'technical' },
+  { key: 'rodzaj_pojazdu', label: 'Rodzaj pojazdu (Rodzaj)', section: 'technical' },
   { key: 'vin', label: 'Numer VIN (E)', section: 'technical', isMono: true },
   { key: 'rok_produkcji', label: 'Rok produkcji', section: 'technical' },
   { key: 'pojemnosc_silnika_cm3', label: 'Pojemność silnika (P.1)', section: 'technical', displaySuffix: ' cm³' },

@@ -108,6 +108,11 @@ export const VehicleRegDetailCard: React.FC<VehicleRegDetailCardProps> = ({ reco
                     {d.numer_rejestracyjny}
                   </span>
                 )}
+                {d.rodzaj_pojazdu && (
+                  <span className="px-2 py-0.5 rounded text-[11px] font-medium text-secondary bg-secondary/10 border border-secondary/20">
+                    {d.rodzaj_pojazdu}
+                  </span>
+                )}
                 {d.nr_dowodu_rejestracyjnego && (
                   <span className="px-2 py-0.5 rounded text-[11px] font-mono text-on-surface-variant bg-surface-container-low border border-outline-variant/60">
                     DR: {d.nr_dowodu_rejestracyjnego}
@@ -316,7 +321,7 @@ export const VehicleRegDetailCard: React.FC<VehicleRegDetailCardProps> = ({ reco
         {/* Stopka modala */}
         <div className="px-6 py-3 border-t border-outline-variant bg-surface-bright flex justify-between items-center shrink-0">
           <span className="text-[11px] text-on-surface-variant">
-            Łącznie: 32 pola dowodu rejestracyjnego + rok produkcji
+            Łącznie: 33 pola dowodu rejestracyjnego + rok produkcji
           </span>
           <button
             type="button"
