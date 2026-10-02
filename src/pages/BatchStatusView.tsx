@@ -2,11 +2,14 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useToast } from '../components/Toast';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
-import { BatchProcessingLogItem, BatchStatusResponse, DocumentPhase } from '../types/api';
+import { BatchProcessingLogItem, BatchStatusResponse, DocumentPhase, DocumentRecordResponse, PolicyRecord } from '../types/api';
+import { DetailModal } from '../components/results/DetailModal';
+import { VehicleRegDetailCard } from '../components/results/VehicleRegDetailCard';
 
 type StatusFilterType = 'all' | 'processing' | 'queued' | 'completed' | 'failed';
 
 const PHASE_LABELS: Record<string, { label: string; icon: string; style: string }> = {
+  // Polisy
   ocr: {
     label: 'Ekstrakcja tekstu (OCR)',
     icon: 'text_snippet',
@@ -18,9 +21,55 @@ const PHASE_LABELS: Record<string, { label: string; icon: string; style: string 
     style: 'bg-purple-500/10 text-purple-700 border-purple-500/20',
   },
   parsing: {
-    label: 'Walidacja wyników',
-    icon: 'verified',
+    label: 'Parsowanie rubryk DR',
+    icon: 'fact_check',
     style: 'bg-teal-500/10 text-teal-700 border-teal-500/20',
+  },
+  // Dowody rejestracyjne
+  orient: {
+    label: 'Analiza orientacji',
+    icon: 'screen_rotation',
+    style: 'bg-amber-500/10 text-amber-700 border-amber-500/20',
+  },
+  aztec: {
+    label: 'Odczyt Aztec 2D',
+    icon: 'qr_code_2',
+    style: 'bg-indigo-500/10 text-indigo-700 border-indigo-500/20',
+  },
+  aztec_enrich: {
+    label: 'Weryfikacja danych Aztec',
+    icon: 'verified',
+    style: 'bg-indigo-500/10 text-indigo-700 border-indigo-500/20',
+  },
+  ocr_segmentation: {
+    label: 'Segmentacja skrzydełek',
+    icon: 'view_column',
+    style: 'bg-cyan-500/10 text-cyan-700 border-cyan-500/20',
+  },
+  ocr_mrz: {
+    label: 'Odczyt paska MRZ',
+    icon: 'barcode',
+    style: 'bg-sky-500/10 text-sky-700 border-sky-500/20',
+  },
+  ocr_right: {
+    label: 'OCR: Skrzydełko prawe',
+    icon: 'document_scanner',
+    style: 'bg-blue-500/10 text-blue-700 border-blue-500/20',
+  },
+  ocr_mid: {
+    label: 'OCR: Skrzydełko środkowe',
+    icon: 'document_scanner',
+    style: 'bg-blue-500/10 text-blue-700 border-blue-500/20',
+  },
+  ocr_left: {
+    label: 'OCR: Skrzydełko lewe',
+    icon: 'document_scanner',
+    style: 'bg-blue-500/10 text-blue-700 border-blue-500/20',
+  },
+  normalizing: {
+    label: 'Walidacja i normalizacja',
+    icon: 'spellcheck',
+    style: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
   },
 };
 
@@ -43,6 +92,7 @@ export const BatchStatusView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [deletingBatch, setDeletingBatch] = useState(false);
   const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<DocumentRecordResponse | null>(null);
 
   // Filtrowanie, wyszukiwanie i paginacja
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all');
@@ -108,6 +158,7 @@ export const BatchStatusView: React.FC = () => {
           if (activeMatch) {
             item.status = 'processing';
             item.current_phase = activeMatch.current_phase;
+            item.progress_message = activeMatch.progress_message;
             item.retry_count = activeMatch.retry_count;
           }
         });
@@ -382,7 +433,7 @@ export const BatchStatusView: React.FC = () => {
         {/* Górna belka: Tytuł, wskaźnik Live Updates oraz Wyszukiwarka */}
         <div className="p-md sm:p-lg border-b border-outline-variant bg-surface-bright flex flex-col sm:flex-row sm:items-center sm:justify-between gap-md">
           <div className="flex items-center gap-sm">
-            <h3 className="font-headline-sm text-headline-sm text-on-surface">Processing Log</h3>
+            <h3 className="font-headline-sm text-headline-sm text-on-surface">Lista dokumentów</h3>
             <span className="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant text-xs font-semibold">
               {logs.length} files
             </span>
@@ -431,6 +482,52 @@ export const BatchStatusView: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Aktywne przetwarzanie w czasie rzeczywistym (Live Active Processing) */}
+        {!isCompleted && statusData.currently_processing && statusData.currently_processing.length > 0 && (
+          <div className="p-md sm:p-lg border-b border-outline-variant bg-secondary/5">
+            <div className="flex items-center justify-between mb-sm">
+              <div className="flex items-center space-x-xs text-secondary font-label-bold text-xs uppercase tracking-wider">
+                <span className="material-symbols-outlined text-[16px] animate-spin-reverse">sync</span>
+                <span>Aktualnie przetwarzane dokumenty ({statusData.currently_processing.length})</span>
+              </div>
+              <span className="text-[11px] text-on-surface-variant font-medium">Odświeżanie na żywo</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-sm">
+              {statusData.currently_processing.map((proc) => {
+                const pInfo = PHASE_LABELS[proc.current_phase] || {
+                  label: proc.current_phase || 'Przetwarzanie',
+                  icon: 'sync',
+                  style: 'bg-secondary/10 text-secondary border-secondary/20',
+                };
+                return (
+                  <div
+                    key={proc.record_id}
+                    className="bg-surface-container-lowest p-sm rounded-lg border border-outline-variant shadow-xs flex items-center justify-between gap-sm"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 font-medium text-xs text-on-surface truncate">
+                        <span className="material-symbols-outlined text-[15px] text-secondary">
+                          description
+                        </span>
+                        <span className="truncate" title={proc.filename}>{proc.filename}</span>
+                      </div>
+                      <p className="text-[11px] text-on-surface-variant italic truncate mt-0.5 animate-pulse">
+                        {proc.progress_message || 'Trwa przetwarzanie dokumentu...'}
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded border text-[11px] font-label-bold shrink-0 ${pInfo.style}`}
+                    >
+                      <span className="material-symbols-outlined text-[13px]">{pInfo.icon}</span>
+                      <span>{pInfo.label}</span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Pasek szybkiego filtrowania (Quick Filter Tabs) & Rozmiar strony */}
         <div className="px-md sm:px-lg py-sm border-b border-outline-variant bg-surface flex flex-col sm:flex-row sm:items-center sm:justify-between gap-sm">
@@ -650,12 +747,40 @@ export const BatchStatusView: React.FC = () => {
                     style: 'bg-secondary/10 text-secondary border-secondary/20',
                   };
 
+                  // Podgląd dokumentu dostępny wyłącznie dla dokumentów, które zakończyły procesowanie
+                  const canPreview = isItemSuccess;
+
+                  const openPreview = () => {
+                    if (log.record) {
+                      setSelectedRecord(log.record);
+                    } else if (canPreview) {
+                      const fallbackRecord: DocumentRecordResponse = {
+                        id: log.id,
+                        batch_id: batchId,
+                        tenant_id: 'default',
+                        filename: log.filename,
+                        document_type: log.document_type?.toLowerCase().includes('dowód')
+                          ? 'vehicle_registration'
+                          : 'policy',
+                        extracted_data: null,
+                        status: log.status,
+                        ocr_used: log.ocr_used ?? false,
+                        czas_procesu_sek: null,
+                        error_message: log.error_message || null,
+                        file_size: log.file_size,
+                        created_at: null,
+                      };
+                      setSelectedRecord(fallbackRecord);
+                    }
+                  };
+
                   return (
                     <tr
                       key={log.id}
+                      onClick={canPreview ? openPreview : undefined}
                       className={`hover:bg-surface-container-low transition-colors ${
                         isItemFailed ? 'bg-error/5' : ''
-                      }`}
+                      } ${canPreview ? 'cursor-pointer' : ''}`}
                     >
                       {/* FILE NAME */}
                       <td className="py-md px-md font-medium text-on-surface">
@@ -731,9 +856,9 @@ export const BatchStatusView: React.FC = () => {
 
                           {/* 3. PROCESSING z dedykowanym badge fazy */}
                           {isItemProcessing && (
-                            <>
+                            <div className="flex items-center gap-xs flex-wrap">
                               <span className="inline-flex items-center space-x-xs px-2.5 py-1 rounded-md bg-secondary/10 text-secondary font-label-bold text-[12px]">
-                                <span className="material-symbols-outlined text-[14px] animate-spin">
+                                <span className="material-symbols-outlined text-[14px] animate-spin-reverse">
                                   sync
                                 </span>
                                 <span>Processing</span>
@@ -754,7 +879,7 @@ export const BatchStatusView: React.FC = () => {
                                   Retry {log.retry_count}
                                 </span>
                               )}
-                            </>
+                            </div>
                           )}
 
                           {/* 4. QUEUED (W kolejce) */}
@@ -769,20 +894,38 @@ export const BatchStatusView: React.FC = () => {
 
                       {/* ACTIONS */}
                       <td className="py-md px-md text-right whitespace-nowrap">
-                        {isItemQueued && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteRecord(log.id, log.filename)}
-                            disabled={deletingRecordId === log.id}
-                            className="p-1.5 rounded-lg text-on-surface-variant hover:text-error hover:bg-error/10 transition-colors cursor-pointer disabled:opacity-50"
-                            title="Usuń dokument z kolejki"
-                            aria-label="Usuń dokument"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">
-                              {deletingRecordId === log.id ? 'hourglass_empty' : 'delete'}
-                            </span>
-                          </button>
-                        )}
+                        <div className="flex items-center justify-end gap-1">
+                          {canPreview && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openPreview();
+                              }}
+                              className="p-1.5 rounded-lg text-secondary hover:text-white hover:bg-secondary transition-colors cursor-pointer inline-flex items-center gap-1 text-xs font-medium"
+                              title="Podgląd przetworzonego dokumentu"
+                              aria-label="Podgląd przetworzonego dokumentu"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">visibility</span>
+                              <span className="hidden sm:inline">Podgląd</span>
+                            </button>
+                          )}
+
+                          {isItemQueued && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteRecord(log.id, log.filename)}
+                              disabled={deletingRecordId === log.id}
+                              className="p-1.5 rounded-lg text-on-surface-variant hover:text-error hover:bg-error/10 transition-colors cursor-pointer disabled:opacity-50"
+                              title="Usuń dokument z kolejki"
+                              aria-label="Usuń dokument"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">
+                                {deletingRecordId === log.id ? 'hourglass_empty' : 'delete'}
+                              </span>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -860,6 +1003,20 @@ export const BatchStatusView: React.FC = () => {
           </div>
         )}
       </section>
+
+      {/* Dynamiczny modal podglądu dokumentu przetworzonego w paczce */}
+      {selectedRecord &&
+        (selectedRecord.document_type === 'vehicle_registration' ? (
+          <VehicleRegDetailCard
+            record={selectedRecord as PolicyRecord}
+            onClose={() => setSelectedRecord(null)}
+          />
+        ) : (
+          <DetailModal
+            record={selectedRecord}
+            onClose={() => setSelectedRecord(null)}
+          />
+        ))}
     </div>
   );
 };

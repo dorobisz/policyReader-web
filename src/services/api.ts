@@ -311,8 +311,10 @@ export const apiService = {
             file_size: r.file_size || (r.filename.toLowerCase().endsWith('.pdf') ? 'PDF' : 'JPG'),
             status: itemStatus,
             current_phase: (r.current_phase as import('../types/api').DocumentPhase) || (itemStatus === 'processing' ? 'ocr' : 'queued'),
+            progress_message: r.progress_message || undefined,
             error_message: r.error_message || undefined,
             ocr_used: r.ocr_used || false,
+            record: r,
           };
         });
       }

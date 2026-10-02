@@ -45,12 +45,27 @@ export interface BatchErrorDetail {
   error_message: string;
 }
 
-export type DocumentPhase = 'queued' | 'ocr' | 'llm_inference' | 'parsing' | 'success' | 'failed';
+export type DocumentPhase =
+  | 'queued'
+  | 'ocr'
+  | 'llm_inference'
+  | 'parsing'
+  | 'orient'
+  | 'aztec'
+  | 'aztec_enrich'
+  | 'ocr_segmentation'
+  | 'ocr_mrz'
+  | 'ocr_right'
+  | 'ocr_mid'
+  | 'ocr_left'
+  | 'normalizing'
+  | 'success'
+  | 'failed';
 
 export interface DocumentPhaseInfo {
   record_id: string;
   filename: string;
-  current_phase: DocumentPhase;
+  current_phase: DocumentPhase | string;
   progress_message: string | null;
   ocr_duration_ms: number | null;
   llm_duration_ms: number | null;
@@ -177,6 +192,7 @@ export interface DocumentRecordResponse {
   extracted_data: Record<string, any> | null;
   status: PolicyRecordStatus | string;
   current_phase?: DocumentPhase | string | null;
+  progress_message?: string | null;
   ocr_used: boolean;
   czas_procesu_sek: number | null;
   error_message: string | null;
@@ -249,9 +265,11 @@ export interface BatchProcessingLogItem {
   file_size?: string;
   status: PolicyRecordStatus;
   current_phase?: DocumentPhase | string | null;
+  progress_message?: string | null;
   error_message?: string;
   ocr_used?: boolean;
   retry_count?: number;
+  record?: DocumentRecordResponse;
 }
 
 /**

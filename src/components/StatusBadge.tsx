@@ -78,7 +78,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     >
       <span
         className={`material-symbols-outlined ${iconSizeClass} ${
-          isSpinning ? 'animate-spin' : ''
+          isSpinning ? 'animate-spin-reverse' : ''
         }`}
         aria-hidden="true"
       >
