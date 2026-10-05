@@ -173,3 +173,107 @@ Poniższe kroki opisują implementację konkretnych ścieżek (routes) w aplikac
         *   `BatchStatusView` → `toast.error()` przy błędzie pollingu
         *   `UploadView` → `toast.success()` po udanym uploadzie, `toast.error()` przy błędzie
         *   `BatchResultsView` → `toast.error()` przy błędzie ładowania wyników
+
+
+---
+
+## 5. Refaktoring Modułu Czytnika Dowodów Rejestracyjnych (Feature-Based Architecture)
+
+### ✅ Krok 5.1: Organizacja Pakietów i Czysta Architektura (Feature Modules) — Ukończono
+*   **Zadanie:** Rozbicie płaskiej struktury komponentów na moduły domenowe oraz reużywalne klocki UI.
+*   **Wykonane:**
+    *   Wydzielono pakiet reużywalnych komponentów UI: `src/components/common/` (`ErrorBoundary`, `MetricCard`, `ProgressBar`, `StatusBadge`, `Toast`).
+    *   Wydzielono pakiet layoutu: `src/components/layout/` (`AppLayout`, `SideNavBar`).
+    *   Utworzono pakiet domenowy `src/features/vehicle-registration/` z podkatalogami `pages/` i `components/` oraz centralnym barrel exportem `index.ts`.
+    *   Utworzono pakiet domenowy `src/features/settings/` z `pages/` i `components/` oraz barrel exportem `index.ts`.
+    *   Zaktualizowano `src/components/index.ts` pod kątem re-eksportu z nowych lokalizacji.
+
+### ✅ Krok 5.2: Uproszczenie Paska Bocznego (SideNavBar) — Ukończono
+*   **Zadanie:** Usunięcie zbędnych zakładek i zmiana nazewnictwa na domenowe.
+*   **Wykonane:**
+    *   Zastąpiono zakładkę `Dashboard` pozycją **`Dowody rejestracyjne`** (ikona `directions_car`, ścieżka `/`).
+    *   **Usunięto zakładkę `Upload`** z paska bocznego (dostęp do wgrywania wyłącznie przez przycisk akcji na ekranie głównym).
+    *   Zakładka `Ustawienia` (`/settings`) została zachowana.
+
+### ✅ Krok 5.3: Domenowy Ekran Główny (`VehicleRegBatchesView.tsx`) — Ukończono
+*   **Zadanie:** Dostosowanie dawnego DashboardView do dowodów rejestracyjnych.
+*   **Wykonane:**
+    *   Zastąpiono `DashboardView` nowym komponentem domenowym `VehicleRegBatchesView.tsx`.
+    *   Zaktualizowano nagłówki na: *Dowody rejestracyjne* i opis zarządzania paczkami odczytanych dowodów.
+    *   Dodano przycisk akcji **„Wgraj dowody”** (`add_photo_alternate`), który kieruje bezpośrednio do `/upload`.
+    *   Dopasowano metryki Bento Grid: *Odczytane dowody (30 dni)*, *Skuteczność odczytu*, *Aktywne paczki*.
+    *   Zaktualizowano tabelę paczek z odnośnikami do postępu (`/jobs/:batchId`) lub wyników (`/result/:batchId`).
+
+### ✅ Krok 5.4: Wgrywanie Wyłącznie Zdjęć JPG z Instrukcją (`VehicleRegUploadView.tsx`) — Ukończono
+*   **Zadanie:** Restrykcja formatu do JPG oraz dodanie wskazówki o skanowaniu 1. strony.
+*   **Wykonane:**
+    *   Zastąpiono `UploadView` nowym komponentem domenowym `VehicleRegUploadView.tsx`.
+    *   Zaktualizowano `APP_CONFIG.allowedExtensions` do ściśle `['.jpg', '.jpeg']` (blokada PDF i PNG).
+    *   Dodano baner z instrukcją: *„Wskazówka: Zeskanuj lub sfotografuj wyłącznie pierwszą stronę dowodu rejestracyjnego (wszystkie kluczowe dane znajdują się na 1. stronie)”*.
+    *   Dostosowano atrybuty drag & drop oraz inputu do `accept=".jpg,.jpeg,image/jpeg"`.
+    *   Przycisk startu: *Rozpocznij odczyt ([liczba_plików])* kierujący do `/jobs/:batchId`.
+
+### ✅ Krok 5.5: Ekran Postępu Odczytu Dowodów (`VehicleRegStatusView.tsx`) — Ukończono
+*   **Zadanie:** Dostosowanie ekranu monitorowania do etapów odczytu dowodów rejestracyjnych.
+*   **Wykonane:**
+    *   Zastąpiono `BatchStatusView` nowym komponentem `VehicleRegStatusView.tsx`.
+    *   Zaktualizowano nazewnictwo i tytuły: *Odczyt dowodów rejestracyjnych*, *Trwa odczytywanie danych ze zdjęć...*, *Liczba zdjęć*, *Odczytane*, *Błędy*, *Oczekujące*.
+    *   Zachowano fazy OCR specyficzne dla dowodów: orientacja, Aztec 2D, weryfikacja, segmentacja, MRZ, skrzydełka, normalizacja.
+
+### ✅ Krok 5.6: Dedykowany Ekran Wyników bez Zakładek Polis (`VehicleRegResultsView.tsx`) — Ukończono
+*   **Zadanie:** Wycięcie elementów polisowych i utworzenie widoku w 100% skupionego na dowodach rejestracyjnych.
+*   **Wykonane:**
+    *   Całkowicie usunięto komponent `PolicyResultsTab.tsx` oraz system zakładek polisowych.
+    *   Stworzono `VehicleRegTable.tsx` jako bezpośrednią tabelę dowodów (nr rej, marka i model, rodzaj, VIN, rok, status).
+    *   Stworzono `VehicleRegDetailCard.tsx` z podziałem na 5 sekcji urzędowych PWPW, kopiowaniem do Excela, podglądem JSON i integracją z konfiguratorem pól.
+    *   Stworzono `VehicleRegDetailModal.tsx` dla podglądu surowego JSON i metadanych.
+    *   Dodano wyszukiwarkę (nr rej, VIN, marka, nazwa) i filtry po marce, rodzaju pojazdu i statusie.
+    *   Dostosowano eksport CSV do parametrów dowodu rejestracyjnego (`document_type: 'vehicle_registration'`).
+
+### ✅ Krok 5.7: Routing i Weryfikacja Kompilacji — Ukończono
+*   **Wykonane:**
+    *   Zaktualizowano `src/main.tsx` z routingiem do nowych komponentów domenowych.
+    *   Usunięto stare pliki `src/pages/*` oraz `src/components/results/*`.
+    *   Zweryfikowano pomyślną kompilację TypeScript i bundle produkcyjny Vite (`npm run build` — 0 błędów, 47 modułów przetransformowanych).
+
+### ✅ Krok 5.8: Usunięcie Animacji Kręcenia się Ikonki w Statusie — Ukończono
+*   **Wykonane:**
+    *   W `VehicleRegStatusView.tsx` usunięto klasę `animate-spin-reverse` z ikonki pliku w tabeli statusu paczki.
+
+### ✅ Krok 5.9: Układ Pól Podglądu Dowodu i Zawijanie do Nowej Linii — Ukończono
+*   **Wykonane:**
+    *   W `VehicleRegDetailCard.tsx` całkowicie wyeliminowano obcinanie tekstu przez wielokropek (`...` / `truncate`).
+    *   Wprowadzono zawijanie tekstu do nowej linii (`break-words whitespace-pre-wrap`) dla wszystkich wartości i etykiet rubryk.
+    *   Uporządkowano sekcję „Posiadacz i właściciel” z czytelnym podziałem na podsekcje **C.1 (Posiadacz dowodu)** oraz **C.2 (Właściciel pojazdu)**, zapewniając pełną szerokość wiersza (`col-span-full`) dla adresów oraz rozpiętość 3 kolumn dla nazw firm/nazwisk.
+    *   Wprowadzono parser kodów rubryk dowodu rejestracyjnego (`parseFieldLabel`) wyróżniający oficjalne oznaczenia urzędowe (np. `A`, `B`, `C.1.1`, `E`, `P.1`) w postaci czytelnych badge'ów.
+    *   Wprowadzono stylizację numeru rejestracyjnego nawiązującą do polskiej tablicy rejestracyjnej oraz łatwe kopiowanie każdego pojedynczego pola jednym kliknięciem.
+    *   Zaktualizowano `VehicleRegTable.tsx` oraz `VehicleRegDetailModal.tsx` o klasę `break-all` zamiast obcinania nazw plików.
+
+### ✅ Krok 5.10: Kompaktowy Układ Sekcji 2x2 i Usunięcie Nadmiaru Badge'ów — Ukończono
+*   **Wykonane:**
+    *   Przebudowano układ modala `VehicleRegDetailCard.tsx` na siatkę dwukolumnową (`grid grid-cols-1 lg:grid-cols-2 gap-4 items-start`), w której sekcje 1 i 2 oraz sekcje 3 i 4 leżą obok siebie.
+    *   Ostatnia sekcja (Ważność i adnotacje urzędowe) rozciąga się na pełną szerokość obu kolumn (`lg:col-span-2`).
+    *   Usunięto nadmiarowe badge'e i dekoracje, przywracając zwarte, czytelne kafelki (`p-2.5 rounded-lg border border-outline-variant/40`), co pozwala zmieścić maksymalnie dużo informacji na ekranie bez przewijania.
+    *   Zachowano brak maskowania tekstu wielokropkiem — długie wartości zawijają się płynnie (`break-words whitespace-pre-wrap`), a kluczowe rubryki (adresy, posiadacze, VIN, homologacja, adnotacje) zajmują `col-span-full` w swoich sekcjach.
+    *   Zbudowano nowy obraz Docker i zrestartowano kontener `policy_reader_web`.
+
+### ✅ Krok 5.11: Zmniejszenie Odstępu Etykieta-Wartość oraz Równomierny Układ Kafelków — Ukończono
+*   **Wykonane:**
+    *   Wyeliminowano sztuczne rozciąganie odstępu między etykietą a wartością przez zamianę `flex flex-col justify-between` na `flex flex-col justify-start` z minimalnym marginesem `mt-1` (wartość znajduje się bezpośrednio pod nagłówkiem rubryki).
+    *   Ujednolicono siatkę wewnątrz sekcji do równego układu 2-kolumnowego (`grid grid-cols-1 sm:grid-cols-2 gap-2.5`), dzięki czemu wszystkie kafelki w danym wierszu mają dokładnie tę samą szerokość i wysokość.
+    *   W przypadku dłuższych tekstów (adresy, nazwy firm, adnotacje) treść płynnie zawija się do nowej linii (`break-words whitespace-pre-wrap leading-snug`), a kafelek w tym samym wierszu automatycznie dopasowuje swoją wysokość bez powstawania pustki między etykietą a wartością.
+    *   Zaktualizowano i uruchomiono nowy kontener na Dockerze.
+
+### ✅ Krok 5.12: Zacieśnienie Przerw Pionowych i Redukcja Wysokości Kafelków — Ukończono
+*   **Wykonane:**
+    *   Zredukowano padding każdego kafelka do `p-2` (8px), a przerwę między etykietą a wartością ustawiono na minimalną (`mt-1 leading-tight` przy `leading-none` etykiety).
+    *   Przeniesiono przycisk kopiowania na pozycjonowanie absolutne w prawym górnym rogu (`absolute top-1.5 right-1.5`), dzięki czemu nie rozpycha wiersza etykiety w pionie.
+    *   Przeniesiono regułę `.material-symbols-outlined` w `src/index.css` do `@layer components`, umożliwiając pełne działanie klas rozmiarów czcionek takich jak `text-[13px]`.
+    *   Zmniejszono marginesy nagłówków sekcji i odstępy w siatce do `gap-2`, co wyraźnie skróciło całkowitą wysokość widoku podglądu.
+    *   Przebudowano obraz Docker i pomyślnie zrestartowano kontener `policy_reader_web`.
+
+### ✅ Krok 5.13: Integracja Paska Konfiguracji i Eksportu w Nagłówku Modala — Ukończono
+*   **Wykonane:**
+    *   Usunięto dolny pasek (footer) z modala `VehicleRegDetailCard.tsx`, co zwolniło dodatkowe miejsce w pionie.
+    *   Przeniesiono opcje schowka (checkbox „Dołącz nagłówki kolumn”, przycisk konfiguratora kolejności pól „Dostosuj kolejność pól”, przełącznik „Widok pól / JSON”, przycisk „Kopiuj JSON” oraz „Kopiuj wiersz do Excela”) bezpośrednio do górnego nagłówka modala.
+    *   Zbudowano nowy obraz kontenera Docker i pomyślnie zrestartowano `policy_reader_web`.

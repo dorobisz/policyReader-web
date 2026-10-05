@@ -1,5 +1,5 @@
 import React from 'react';
-import { BatchStatus } from '../types/api';
+import { BatchStatus } from '../../types/api';
 
 export interface ProgressBarProps {
   progress: number;

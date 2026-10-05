@@ -270,6 +270,7 @@ export interface BatchProcessingLogItem {
   ocr_used?: boolean;
   retry_count?: number;
   record?: DocumentRecordResponse;
+  extracted_data?: Record<string, any> | null;
 }
 
 /**

@@ -1,9 +1,9 @@
 import React, { useState, useRef, useMemo, DragEvent, ChangeEvent } from 'react';
-import { useToast } from '../components/Toast';
+import { useToast } from '../../../components';
 import { useNavigate } from 'react-router-dom';
-import { apiService } from '../services/api';
-import { UploadSelectedFile } from '../types/api';
-import { APP_CONFIG } from '../config/appConfig';
+import { apiService } from '../../../services/api';
+import { UploadSelectedFile } from '../../../types/api';
+import { APP_CONFIG } from '../../../config/appConfig';
 
 /**
  * Formatuje rozmiar pliku w bajtach na czytelną dla człowieka jednostkę (B, KB, MB)
@@ -17,7 +17,7 @@ function formatBytes(bytes: number, decimals = 1): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 }
 
-export const UploadView: React.FC = () => {
+export const VehicleRegUploadView: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
@@ -33,7 +33,7 @@ export const UploadView: React.FC = () => {
   const [pageSize, setPageSize] = useState(APP_CONFIG.defaultPageSize);
 
   /**
-   * Waliduje i dodaje pliki do listy wybranych z uwzględnieniem limitu paczki (200)
+   * Waliduje i dodaje pliki do listy wybranych z uwzględnieniem limitu paczki oraz restrykcji JPG
    */
   const handleAddFiles = (filesList: FileList | File[]) => {
     setErrorMessage(null);
@@ -52,14 +52,13 @@ export const UploadView: React.FC = () => {
     }
 
     incoming.forEach((file) => {
-      // Walidacja rozszerzenia / typu MIME (PDF oraz zdjęcia dowodów JPG/PNG)
-      const isAllowed = APP_CONFIG.allowedExtensions.some((ext) =>
-        file.name.toLowerCase().endsWith(ext)
-      );
+      // Ścisła walidacja rozszerzenia (wyłącznie JPG / JPEG)
+      const fileNameLower = file.name.toLowerCase();
+      const isJpg = APP_CONFIG.allowedExtensions.some((ext) => fileNameLower.endsWith(ext));
 
-      if (!isAllowed) {
+      if (!isJpg) {
         errors.push(
-          `Plik "${file.name}" został pominięty — akceptowane są pliki PDF oraz obrazy JPG/PNG.`,
+          `Plik "${file.name}" został pominięty — akceptowane są wyłącznie zdjęcia JPG/JPEG dowodów rejestracyjnych.`,
         );
         return;
       }
@@ -97,7 +96,7 @@ export const UploadView: React.FC = () => {
         const accepted = validFiles.slice(0, availableSlots);
         const excessCount = validFiles.length - availableSlots;
         setSelectedFiles((prev) => [...prev, ...accepted]);
-        const warningMsg = `Dodano ${accepted.length} plików. Pominięto ${excessCount} plików z powodu limitu paczki (${APP_CONFIG.maxFilesPerBatch}).`;
+        const warningMsg = `Dodano ${accepted.length} zdjęć. Pominięto ${excessCount} zdjęć z powodu limitu paczki (${APP_CONFIG.maxFilesPerBatch}).`;
         toast.warning('Osiągnięto limit paczki', warningMsg);
       } else {
         setSelectedFiles((prev) => [...prev, ...validFiles]);
@@ -154,8 +153,8 @@ export const UploadView: React.FC = () => {
   };
 
   /**
-   * Obsługa przycisku Start Processing:
-   * Wysyła pliki przez apiService.uploadPolicies, odbiera batch_id i przekierowuje do /jobs/{batch_id}
+   * Obsługa przycisku Rozpocznij odczyt:
+   * Wysyła zdjęcia dowodów przez apiService.uploadPolicies, odbiera batch_id i przekierowuje do /jobs/{batch_id}
    */
   const handleStartProcessing = async () => {
     if (selectedFiles.length === 0 || isUploading) return;
@@ -169,20 +168,20 @@ export const UploadView: React.FC = () => {
 
       if (response && response.batch_id) {
         toast.success(
-          'Upload successful!',
-          `Processing ${selectedFiles.length} file(s) — Batch #${response.batch_id}`,
+          'Wgrywanie zakończone sukcesem!',
+          `Rozpoczęto odczyt ${selectedFiles.length} dowodów — Paczka #${response.batch_id}`,
         );
         navigate(`/jobs/${response.batch_id}`);
       } else {
         throw new Error('Nie otrzymano identyfikatora paczki (batch_id) z serwera.');
       }
     } catch (err: unknown) {
-      console.error('Błąd podczas uploadu polis:', err);
+      console.error('Błąd podczas uploadu dowodów:', err);
       const msg =
         err instanceof Error
           ? err.message
           : 'Wystąpił nieoczekiwany błąd podczas przesyłania plików.';
-      toast.error('Upload failed', msg);
+      toast.error('Błąd wgrywania', msg);
       setErrorMessage(msg);
       setIsUploading(false);
     }
@@ -222,10 +221,10 @@ export const UploadView: React.FC = () => {
       <div className="mb-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-md">
         <div>
           <h2 className="font-display-lg text-display-lg text-on-surface mb-xs">
-            Document Upload
+            Wgrywanie dowodów rejestracyjnych
           </h2>
           <p className="font-body-lg text-body-lg text-on-surface-variant">
-            Upload policy documents for automated OCR extraction and processing.
+            Dodaj zdjęcia dowodów rejestracyjnych w formacie JPG do automatycznego odczytu danych pojazdu.
           </p>
         </div>
 
@@ -233,7 +232,7 @@ export const UploadView: React.FC = () => {
         <div className="bg-surface-container-low border border-outline-variant rounded-xl p-md flex items-center gap-md self-start sm:self-auto min-w-[220px]">
           <div className="flex-1">
             <div className="flex justify-between text-label-sm font-label-sm text-on-surface-variant mb-1">
-              <span>Batch Capacity</span>
+              <span>Pojemność paczki</span>
               <span className={`font-semibold ${isAtCapacity ? 'text-error' : 'text-on-surface'}`}>
                 {selectedFiles.length} / {APP_CONFIG.maxFilesPerBatch}
               </span>
@@ -256,8 +255,23 @@ export const UploadView: React.FC = () => {
               isAtCapacity ? 'text-error' : 'text-on-surface-variant'
             }`}
           >
-            {isAtCapacity ? 'error' : 'folder_zip'}
+            {isAtCapacity ? 'lock' : 'directions_car'}
           </span>
+        </div>
+      </div>
+
+      {/* Instrukcja dla użytkownika dotycząca 1. strony dowodu */}
+      <div className="mb-lg bg-secondary/10 border border-secondary/30 rounded-xl p-md flex items-start gap-md">
+        <span className="material-symbols-outlined text-secondary text-[24px] mt-0.5 shrink-0">
+          info
+        </span>
+        <div>
+          <p className="font-label-bold text-label-bold text-secondary">
+            Wskazówka: Zeskanuj lub sfotografuj wyłącznie pierwszą stronę dowodu rejestracyjnego
+          </p>
+          <p className="text-body-sm text-on-surface-variant mt-0.5">
+            Wszystkie kluczowe informacje o pojeździe (numer rejestracyjny, numer VIN, marka, model, rok produkcji, dopuszczalne masy i parametry techniczne) znajdują się na pierwszej stronie dokumentu.
+          </p>
         </div>
       </div>
 
@@ -314,7 +328,7 @@ export const UploadView: React.FC = () => {
               fileInputRef.current?.click();
             }
           }}
-          aria-label="Kliknij lub przeciągnij pliki PDF tutaj"
+          aria-label="Kliknij lub przeciągnij zdjęcia dowodów rejestracyjnych (JPG) tutaj"
         >
           <input
             ref={fileInputRef}
@@ -322,7 +336,7 @@ export const UploadView: React.FC = () => {
             type="file"
             multiple
             disabled={isAtCapacity}
-            accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+            accept=".jpg,.jpeg,image/jpeg"
             onChange={handleFileInputChange}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer pointer-events-none"
             tabIndex={-1}
@@ -341,25 +355,25 @@ export const UploadView: React.FC = () => {
               className="material-symbols-outlined text-3xl"
               style={{ fontVariationSettings: "'FILL' 1" }}
             >
-              {isAtCapacity ? 'lock' : 'cloud_upload'}
+              {isAtCapacity ? 'lock' : 'add_a_photo'}
             </span>
           </div>
 
           <p className="font-headline-sm text-headline-sm text-on-surface mb-xs text-center">
             {isAtCapacity
-              ? 'Maksymalny limit 200 plików został osiągnięty'
-              : 'Drag & drop policies (PDF) or vehicle registration photos (JPG/PNG)'}
+              ? 'Maksymalny limit 200 zdjęć został osiągnięty'
+              : 'Przeciągnij i upuść zdjęcia dowodów rejestracyjnych (JPG)'}
           </p>
           <p className="font-body-sm text-body-sm text-on-surface-variant mb-sm text-center">
             {isAtCapacity ? (
               <span>Usuń część plików z poniższej listy, aby móc dodać inne dokumenty.</span>
             ) : (
               <>
-                or{' '}
+                lub{' '}
                 <span className="text-secondary font-medium underline decoration-secondary decoration-1 underline-offset-2">
-                  browse files
+                  wybierz pliki
                 </span>{' '}
-                from your computer
+                z komputera
               </>
             )}
           </p>
@@ -367,7 +381,7 @@ export const UploadView: React.FC = () => {
           <div className="flex flex-wrap items-center justify-center gap-xs font-label-md text-label-md text-on-surface-variant bg-surface-variant px-sm py-xs rounded">
             <span className="material-symbols-outlined text-[16px]">info</span>
             <span>
-              Format: PDF, JPG, PNG • Max: {formatBytes(APP_CONFIG.maxFileSizeBytes)} / file • Max {APP_CONFIG.maxFilesPerBatch} files / batch
+              Format: wyłącznie JPG • Maks.: {formatBytes(APP_CONFIG.maxFileSizeBytes)} / plik • Maks. {APP_CONFIG.maxFilesPerBatch} zdjęć / paczka
             </span>
           </div>
         </div>
@@ -375,18 +389,18 @@ export const UploadView: React.FC = () => {
         {/* Sekcja wybranych plików z przyciskiem Start NAD listą */}
         {selectedFiles.length > 0 && (
           <div className="flex flex-col gap-md pt-xs">
-            {/* PASEK AKCJI NAD LISTĄ DOKUMENTÓW (Zawsze widoczny u góry bez przewijania) */}
+            {/* PASEK AKCJI NAD LISTĄ DOKUMENTÓW */}
             <div className="bg-surface-container-low border border-outline-variant rounded-xl p-md flex flex-col md:flex-row md:items-center md:justify-between gap-md shadow-sm">
               <div className="flex items-center gap-md flex-wrap">
                 <div>
                   <h3 className="font-label-bold text-label-bold text-on-surface flex items-center gap-xs">
-                    <span>Selected Files</span>
+                    <span>Wybrane zdjęcia dowodów</span>
                     <span className="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container text-xs font-bold">
                       {selectedFiles.length} / {APP_CONFIG.maxFilesPerBatch}
                     </span>
                   </h3>
                   <p className="text-label-md text-on-surface-variant">
-                    Total size: <strong>{formatBytes(totalBytes)}</strong>
+                    Łączny rozmiar: <strong>{formatBytes(totalBytes)}</strong>
                   </p>
                 </div>
               </div>
@@ -401,7 +415,7 @@ export const UploadView: React.FC = () => {
                   title="Usuń wszystkie pliki z kolejki"
                 >
                   <span className="material-symbols-outlined text-[18px]">delete_sweep</span>
-                  <span>Clear all</span>
+                  <span>Wyczyść wszystko</span>
                 </button>
 
                 <button
@@ -412,14 +426,14 @@ export const UploadView: React.FC = () => {
                 >
                   {isUploading ? (
                     <>
-                      <span>Starting...</span>
+                      <span>Uruchamianie...</span>
                       <span className="material-symbols-outlined text-[18px] animate-spin">
                         sync
                       </span>
                     </>
                   ) : (
                     <>
-                      <span>Start Processing ({selectedFiles.length})</span>
+                      <span>Rozpocznij odczyt ({selectedFiles.length})</span>
                       <span className="material-symbols-outlined text-[18px]">
                         arrow_forward
                       </span>
@@ -437,7 +451,7 @@ export const UploadView: React.FC = () => {
                 </span>
                 <input
                   type="text"
-                  placeholder="Search in selected files..."
+                  placeholder="Filtruj wybrane pliki..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -461,7 +475,7 @@ export const UploadView: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-sm text-body-sm text-on-surface-variant">
-                <span>Per page:</span>
+                <span>Na stronę:</span>
                 <select
                   value={pageSize}
                   onChange={(e) => {
@@ -477,11 +491,11 @@ export const UploadView: React.FC = () => {
               </div>
             </div>
 
-            {/* Lista dokumentów (Paginowana) */}
+            {/* Lista plików (Paginowana) */}
             {filteredFiles.length === 0 ? (
               <div className="p-xl text-center border border-outline-variant rounded-lg bg-surface-bright text-on-surface-variant">
                 <span className="material-symbols-outlined text-3xl mb-xs">search_off</span>
-                <p className="font-body-md">Nie znaleziono plików pasujących do &quot;{searchQuery}&quot;.</p>
+                <p className="font-body-md">Nie znaleziono zdjęć pasujących do &quot;{searchQuery}&quot;.</p>
               </div>
             ) : (
               <ul className="space-y-xs">
@@ -496,8 +510,8 @@ export const UploadView: React.FC = () => {
                         <span className="text-label-sm font-mono text-on-surface-variant w-8 shrink-0">
                           #{globalIndex}
                         </span>
-                        <span className={`material-symbols-outlined shrink-0 ${fileItem.name.toLowerCase().endsWith('.pdf') ? 'text-error' : 'text-secondary'}`}>
-                          {fileItem.name.toLowerCase().endsWith('.pdf') ? 'picture_as_pdf' : 'image'}
+                        <span className="material-symbols-outlined shrink-0 text-secondary">
+                          image
                         </span>
                         <div className="min-w-0">
                           <p
@@ -535,16 +549,16 @@ export const UploadView: React.FC = () => {
             {filteredFiles.length > 0 && (
               <div className="pt-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-sm border-t border-outline-variant">
                 <div className="text-body-sm text-on-surface-variant">
-                  Showing{' '}
+                  Wyświetlanie{' '}
                   <strong className="text-on-surface">
                     {(safeCurrentPage - 1) * pageSize + 1}
                   </strong>{' '}
-                  to{' '}
+                  do{' '}
                   <strong className="text-on-surface">
                     {Math.min(safeCurrentPage * pageSize, filteredFiles.length)}
                   </strong>{' '}
-                  of <strong className="text-on-surface">{filteredFiles.length}</strong> files
-                  {searchQuery && ` (filtered from ${selectedFiles.length})`}
+                  z <strong className="text-on-surface">{filteredFiles.length}</strong> zdjęć
+                  {searchQuery && ` (przefiltrowano z ${selectedFiles.length})`}
                 </div>
 
                 {totalPages > 1 && (
@@ -571,7 +585,7 @@ export const UploadView: React.FC = () => {
                     </button>
 
                     <span className="px-sm text-label-md font-label-md text-on-surface">
-                      Page {safeCurrentPage} of {totalPages}
+                      Strona {safeCurrentPage} z {totalPages}
                     </span>
 
                     <button
@@ -605,4 +619,4 @@ export const UploadView: React.FC = () => {
   );
 };
 
-export default UploadView;
+export default VehicleRegUploadView;

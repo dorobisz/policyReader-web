@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useVehicleCopySettings } from '../../hooks/useVehicleCopySettings';
-import { VEHICLE_FIELD_DEFINITIONS, CopyFieldConfig } from '../../config/vehicleFields';
+import { useVehicleCopySettings } from '../../../hooks/useVehicleCopySettings';
+import { VEHICLE_FIELD_DEFINITIONS, CopyFieldConfig } from '../../../config/vehicleFields';
 
 interface Props {
   isOpen: boolean;
@@ -163,3 +163,5 @@ export const VehicleCopyFieldsConfig: React.FC<Props> = ({ isOpen, onClose }) =>
     </div>
   );
 };
+
+export default VehicleCopyFieldsConfig;

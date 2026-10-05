@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useToast } from '../components/Toast';
+import { useToast } from '../../../components';
 import { Link } from 'react-router-dom';
-import { Batch, StatsMetrics } from '../types/api';
-import { apiService } from '../services/api';
-import { StatusBadge } from '../components/StatusBadge';
-import { ProgressBar } from '../components/ProgressBar';
-import { MetricCard } from '../components/MetricCard';
+import { Batch, StatsMetrics } from '../../../types/api';
+import { apiService } from '../../../services/api';
+import { StatusBadge, ProgressBar, MetricCard } from '../../../components';
 
 /**
  * Formatuje identyfikator paczki do zwięzłego widoku z elipsą w środku, np. 'b83f-9a2c...4d1e'
@@ -16,7 +14,7 @@ function formatBatchId(id: string): string {
   return `${id.slice(0, 9)}...${id.slice(-4)}`;
 }
 
-export const DashboardView: React.FC = () => {
+export const VehicleRegBatchesView: React.FC = () => {
   const toast = useToast();
   const [metrics, setMetrics] = useState<StatsMetrics>({
     total_processed_30d: 1248,
@@ -48,8 +46,8 @@ export const DashboardView: React.FC = () => {
       setBatches(batchesData.batches);
       setTotalBatches(batchesData.total);
     } catch (err) {
-      console.error('Błąd ładowania danych dashboardu:', err);
-      toast.error('Failed to load dashboard data', 'Using cached data instead.');
+      console.error('Błąd ładowania danych dowodów rejestracyjnych:', err);
+      toast.error('Błąd pobierania danych', 'Użyto danych z pamięci podręcznej.');
     } finally {
       setLoading(false);
     }
@@ -88,9 +86,10 @@ export const DashboardView: React.FC = () => {
       await apiService.deleteBatch(batchId);
       toast.success('Paczka usunięta', `Paczka #${batchId} została pomyślnie usunięta.`);
       loadData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Błąd usuwania paczki:', err);
-      toast.error('Błąd usuwania', err?.message || 'Nie udało się usunąć paczki.');
+      const msg = err instanceof Error ? err.message : 'Nie udało się usunąć paczki.';
+      toast.error('Błąd usuwania', msg);
     }
   };
 
@@ -99,9 +98,9 @@ export const DashboardView: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-md">
         <div>
-          <h2 className="font-display-lg text-display-lg text-on-surface">Overview</h2>
+          <h2 className="font-display-lg text-display-lg text-on-surface">Dowody rejestracyjne</h2>
           <p className="font-body-lg text-body-lg text-on-surface-variant mt-xs">
-            Manage your recent policy processing batches.
+            Zarządzanie paczkami odczytanych dowodów rejestracyjnych pojazdów.
           </p>
         </div>
 
@@ -111,7 +110,7 @@ export const DashboardView: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
-              className={`px-md py-sm border rounded-lg font-label-bold text-label-bold transition-colors flex items-center gap-xs ${
+              className={`px-md py-sm border rounded-lg font-label-bold text-label-bold transition-colors flex items-center gap-xs cursor-pointer ${
                 statusFilter !== 'all'
                   ? 'border-secondary bg-surface-container-high text-secondary'
                   : 'border-outline text-on-surface hover:bg-surface-container-low'
@@ -120,7 +119,7 @@ export const DashboardView: React.FC = () => {
               aria-label="Filtruj paczki"
             >
               <span className="material-symbols-outlined text-[18px]">filter_list</span>
-              <span>Filter</span>
+              <span>Filtr</span>
               {statusFilter !== 'all' && (
                 <span className="ml-xs px-1.5 py-0.5 rounded-full bg-secondary text-on-secondary text-[10px] uppercase font-bold">
                   {statusFilter}
@@ -135,13 +134,13 @@ export const DashboardView: React.FC = () => {
                 role="menu"
               >
                 <div className="px-md py-xs font-label-bold text-label-bold text-on-surface-variant uppercase text-[10px]">
-                  Filtruj po statusie
+                  Status paczki
                 </div>
                 <div className="py-xs">
                   <button
                     type="button"
                     onClick={() => handleFilterSelect('all')}
-                    className={`w-full text-left px-md py-sm text-body-sm flex items-center justify-between hover:bg-surface-container-low ${
+                    className={`w-full text-left px-md py-sm text-body-sm flex items-center justify-between hover:bg-surface-container-low cursor-pointer ${
                       statusFilter === 'all' ? 'font-semibold text-secondary' : 'text-on-surface'
                     }`}
                   >
@@ -153,13 +152,13 @@ export const DashboardView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleFilterSelect('processing')}
-                    className={`w-full text-left px-md py-sm text-body-sm flex items-center justify-between hover:bg-surface-container-low ${
+                    className={`w-full text-left px-md py-sm text-body-sm flex items-center justify-between hover:bg-surface-container-low cursor-pointer ${
                       statusFilter === 'processing'
                         ? 'font-semibold text-secondary'
                         : 'text-on-surface'
                     }`}
                   >
-                    <span>Processing</span>
+                    <span>W trakcie</span>
                     {statusFilter === 'processing' && (
                       <span className="material-symbols-outlined text-[16px]">check</span>
                     )}
@@ -167,13 +166,13 @@ export const DashboardView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleFilterSelect('completed')}
-                    className={`w-full text-left px-md py-sm text-body-sm flex items-center justify-between hover:bg-surface-container-low ${
+                    className={`w-full text-left px-md py-sm text-body-sm flex items-center justify-between hover:bg-surface-container-low cursor-pointer ${
                       statusFilter === 'completed'
                         ? 'font-semibold text-secondary'
                         : 'text-on-surface'
                     }`}
                   >
-                    <span>Completed</span>
+                    <span>Zakończone</span>
                     {statusFilter === 'completed' && (
                       <span className="material-symbols-outlined text-[16px]">check</span>
                     )}
@@ -181,11 +180,11 @@ export const DashboardView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleFilterSelect('failed')}
-                    className={`w-full text-left px-md py-sm text-body-sm flex items-center justify-between hover:bg-surface-container-low ${
+                    className={`w-full text-left px-md py-sm text-body-sm flex items-center justify-between hover:bg-surface-container-low cursor-pointer ${
                       statusFilter === 'failed' ? 'font-semibold text-secondary' : 'text-on-surface'
                     }`}
                   >
-                    <span>Failed</span>
+                    <span>Błędy</span>
                     {statusFilter === 'failed' && (
                       <span className="material-symbols-outlined text-[16px]">check</span>
                     )}
@@ -195,32 +194,32 @@ export const DashboardView: React.FC = () => {
             )}
           </div>
 
-          {/* Przycisk Nowego Przesyłania (Szybki skrót do /upload) */}
+          {/* Przycisk Wgraj dowody (kierujący do /upload) */}
           <Link
             to="/upload"
-            className="px-md py-sm rounded-lg font-label-bold text-label-bold bg-secondary text-on-secondary hover:bg-secondary/90 transition-colors flex items-center gap-xs shadow-sm"
+            className="px-md py-sm rounded-lg font-label-bold text-label-bold bg-secondary text-on-secondary hover:bg-secondary/90 transition-colors flex items-center gap-xs shadow-sm cursor-pointer"
           >
-            <span className="material-symbols-outlined text-[18px]">upload_file</span>
-            <span>Upload</span>
+            <span className="material-symbols-outlined text-[18px]">add_photo_alternate</span>
+            <span>Wgraj dowody</span>
           </Link>
         </div>
       </div>
 
-      {/* Bento Grid Layout - Metrics Row */}
+      {/* Bento Grid Layout - Metryki Dowodów Rejestracyjnych */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-lg">
-        {/* Metric 1: Total Processed */}
+        {/* Metryka 1: Przetworzone dowody */}
         <MetricCard
-          label="Total Processed (30d)"
+          label="Odczytane dowody (30 dni)"
           value={metrics.total_processed_30d.toLocaleString()}
-          icon="description"
+          icon="directions_car"
           iconBgClass="bg-surface-container-high"
           iconColorClass="text-primary"
           loading={loading}
         />
 
-        {/* Metric 2: Success Rate */}
+        {/* Metryka 2: Skuteczność */}
         <MetricCard
-          label="Success Rate"
+          label="Skuteczność odczytu"
           value={metrics.success_rate}
           suffix="%"
           icon="check_circle"
@@ -229,9 +228,9 @@ export const DashboardView: React.FC = () => {
           loading={loading}
         />
 
-        {/* Metric 3: Active Batches */}
+        {/* Metryka 3: Aktywne paczki */}
         <MetricCard
-          label="Active Batches"
+          label="Aktywne paczki"
           value={metrics.active_batches}
           icon="pending_actions"
           iconBgClass="bg-surface-container-high"
@@ -240,53 +239,55 @@ export const DashboardView: React.FC = () => {
         />
       </div>
 
-      {/* Recent Batches Table Card */}
+      {/* Tabela ostatnich paczek dowodów rejestracyjnych */}
       <div className="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col">
-        {/* Card Header */}
+        {/* Nagłówek karty */}
         <div className="p-md border-b border-outline-variant flex justify-between items-center bg-surface-bright">
           <div className="flex items-center gap-sm">
-            <h3 className="font-headline-sm text-headline-sm text-on-surface">Recent Batches</h3>
+            <h3 className="font-headline-sm text-headline-sm text-on-surface">Paczki dowodów rejestracyjnych</h3>
             {statusFilter !== 'all' && (
               <span className="text-body-sm text-on-surface-variant font-normal">
-                (filtered by: <span className="font-medium text-on-surface">{statusFilter}</span>)
+                (filtr: <span className="font-medium text-on-surface">{statusFilter}</span>)
               </span>
             )}
           </div>
           <button
             type="button"
             onClick={handleToggleViewAll}
-            className="text-secondary font-label-bold text-label-bold hover:underline transition-colors"
+            className="text-secondary font-label-bold text-label-bold hover:underline transition-colors cursor-pointer"
           >
-            {pageSize === 4 ? 'View All' : 'Show Compact (4)'}
+            {pageSize === 4 ? 'Pokaż wszystkie' : 'Widok zwinięty (4)'}
           </button>
         </div>
 
-        {/* Table Content */}
+        {/* Zawartość tabeli */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[650px]">
             <thead>
-              <tr className="border-b border-outline-variant bg-surface-bright">
+              <tr className="border-b border-outline-variant bg-surface-bright text-xs">
                 <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant w-[25%]">
-                  Batch ID
+                  ID Paczki
                 </th>
                 <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant w-[20%]">
-                  Date Added
+                  Data dodania
                 </th>
                 <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant w-[15%]">
                   Status
                 </th>
                 <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant w-[25%]">
-                  Progress
+                  Postęp odczytu
                 </th>
                 <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant w-[10%] text-right">
-                  Actions
+                  Zdjęcia
+                </th>
+                <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant w-[5%] text-right">
+                  Akcje
                 </th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-outline-variant">
+            <tbody className="divide-y divide-outline-variant text-sm">
               {loading ? (
-                // Skeletons
                 Array.from({ length: 4 }).map((_, idx) => (
                   <tr key={`skeleton-${idx}`} className="animate-pulse">
                     <td className="py-sm px-md">
@@ -313,28 +314,29 @@ export const DashboardView: React.FC = () => {
                 <tr>
                   <td colSpan={6} className="py-xl text-center text-on-surface-variant">
                     <span className="material-symbols-outlined text-4xl block mb-sm text-outline">
-                      inbox
+                      directions_car
                     </span>
-                    <p className="font-headline-sm text-headline-sm text-on-surface">No batches found</p>
+                    <p className="font-headline-sm text-headline-sm text-on-surface">Brak paczek dowodów rejestracyjnych</p>
                     <p className="font-body-md text-body-md mt-xs">
                       {statusFilter !== 'all'
-                        ? `No batches matching status "${statusFilter}". Try resetting your filter.`
-                        : 'Upload policy files to create your first processing batch.'}
+                        ? `Brak paczek o statusie "${statusFilter}". Zresetuj filtr, aby zobaczyć wszystkie.`
+                        : 'Wgraj zdjęcia dowodów rejestracyjnych (JPG), aby utworzyć pierwszą paczkę.'}
                     </p>
                     {statusFilter !== 'all' ? (
                       <button
                         type="button"
                         onClick={() => handleFilterSelect('all')}
-                        className="mt-md text-secondary font-label-bold text-label-bold hover:underline"
+                        className="mt-md text-secondary font-label-bold text-label-bold hover:underline cursor-pointer"
                       >
-                        Clear Filter
+                        Wyczyść filtr
                       </button>
                     ) : (
                       <Link
                         to="/upload"
-                        className="inline-block mt-md px-md py-sm rounded-lg bg-secondary text-on-secondary font-label-bold text-label-bold"
+                        className="inline-flex items-center gap-xs mt-md px-md py-sm rounded-lg bg-secondary text-on-secondary font-label-bold text-label-bold cursor-pointer"
                       >
-                        Upload Policies
+                        <span className="material-symbols-outlined text-[18px]">add_photo_alternate</span>
+                        <span>Wgraj dowody</span>
                       </Link>
                     )}
                   </td>
@@ -343,6 +345,9 @@ export const DashboardView: React.FC = () => {
                 batches.map((batch) => {
                   const isFailed = batch.status === 'failed';
                   const formattedId = formatBatchId(batch.batch_id);
+                  const targetUrl = batch.status === 'completed'
+                    ? `/result/${batch.batch_id}`
+                    : `/jobs/${batch.batch_id}`;
 
                   return (
                     <tr
@@ -357,11 +362,11 @@ export const DashboardView: React.FC = () => {
                               isFailed ? 'text-error' : 'text-on-surface-variant'
                             }`}
                           >
-                            {isFailed ? 'error' : 'folder_zip'}
+                            {isFailed ? 'error' : 'directions_car'}
                           </span>
                           <Link
-                            to={`/jobs/${batch.batch_id}`}
-                            title={`Open batch details: ${batch.batch_id}`}
+                            to={targetUrl}
+                            title={`Przejdź do paczki: ${batch.batch_id}`}
                             className="font-body-md text-body-md text-secondary hover:underline font-medium font-mono text-sm truncate"
                           >
                             {formattedId}
@@ -415,27 +420,27 @@ export const DashboardView: React.FC = () => {
         {/* Card Footer with Pagination */}
         <div className="p-sm border-t border-outline-variant bg-surface-bright flex justify-between items-center px-md text-sm text-on-surface-variant">
           <span>
-            Showing {startItemIndex}-{endItemIndex} of {totalBatches} batches
+            Wyświetlanie {startItemIndex}-{endItemIndex} z {totalBatches} paczek
           </span>
           <div className="flex items-center gap-xs">
             <button
               type="button"
               onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={currentPage <= 1 || loading}
-              className="p-1 rounded hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-              aria-label="Previous page"
+              className="p-1 rounded hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center cursor-pointer"
+              aria-label="Poprzednia strona"
             >
               <span className="material-symbols-outlined text-[18px]">chevron_left</span>
             </button>
             <span className="font-body-sm text-body-sm px-xs">
-              Page {currentPage} of {totalPages}
+              Strona {currentPage} z {totalPages}
             </span>
             <button
               type="button"
               onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={currentPage >= totalPages || loading}
-              className="p-1 rounded hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-              aria-label="Next page"
+              className="p-1 rounded hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center cursor-pointer"
+              aria-label="Następna strona"
             >
               <span className="material-symbols-outlined text-[18px]">chevron_right</span>
             </button>
@@ -446,4 +451,4 @@ export const DashboardView: React.FC = () => {
   );
 };
 
-export default DashboardView;
+export default VehicleRegBatchesView;

@@ -12,7 +12,7 @@ export interface NavItem {
 export interface SideNavBarProps {
   /**
    * Opcjonalna lista elementów nawigacyjnych.
-   * Domyślnie: Dashboard ('/') i Upload ('/upload').
+   * Domyślnie: Dowody rejestracyjne ('/') i Ustawienia ('/settings').
    */
   items?: NavItem[];
   /**
@@ -32,22 +32,17 @@ export interface SideNavBarProps {
    */
   appName?: string;
   /**
-   * Opcjonalny podtytuł aplikacji (domyślnie 'Policy Intelligence').
+   * Opcjonalny podtytuł aplikacji (domyślnie 'Czytnik Dowodów').
    */
   appSubtitle?: string;
 }
 
 const DEFAULT_NAV_ITEMS: NavItem[] = [
   {
-    label: 'Dashboard',
+    label: 'Dowody rejestracyjne',
     to: '/',
-    icon: 'dashboard',
+    icon: 'directions_car',
     end: true,
-  },
-  {
-    label: 'Upload',
-    to: '/upload',
-    icon: 'upload_file',
   },
   {
     label: 'Ustawienia',
@@ -67,9 +62,10 @@ const DEFAULT_USER: AppLayoutUser = {
 /**
  * SideNavBar — Komponent bocznego paska nawigacyjnego
  * 
- * Makiety źródłowe: dashboard/code.html, Upload/code.html, Batch_Processing/code.html.
- * Wykorzystuje NavLink z react-router-dom do automatycznego podświetlania aktywnego elementu
- * (klasa bg-surface-container-high, text-on-surface, ikona w wariancie wypełnionym).
+ * Zapewnia dostęp do modułów:
+ * - Dowody rejestracyjne ('/')
+ * - Ustawienia ('/settings')
+ * Zakładka uploadu została usunięta na rzecz przycisku akcji na ekranie głównym.
  */
 export const SideNavBar: React.FC<SideNavBarProps> = ({
   items = DEFAULT_NAV_ITEMS,
@@ -77,7 +73,7 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
   onClose,
   user = DEFAULT_USER,
   appName = 'BrokerEngine',
-  appSubtitle = 'Policy Intelligence',
+  appSubtitle = 'Czytnik Dowodów',
 }) => {
   return (
     <div className="flex flex-col h-full select-none">

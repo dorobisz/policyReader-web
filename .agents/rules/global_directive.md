@@ -1,4 +1,24 @@
+---
+trigger: always_on
+---
+
+---
+name: brokerengine-ui-global-directive
+description: Master agent directives for BrokerEngine UI development, including the overriding forbidden directory security rule.
+---
+
 # ALWAYS-ON AGENT DIRECTIVES: BROKERENGINE UI DEVELOPMENT
+
+## 0. NADRZĘDNA ZASADA BEZPIECZEŃSTWA: BEZWZGLĘDNY ZAKAZ DOSTĘPU DO KATALOGÓW "ZAKAZANE" (*zakazane*)
+* **WIELKOŚĆ LITER I WZORZEC NAZWY (Case-Insensitive & *zakazane*):** Zakaz dotyczy **dowolnej wielkości liter** (`zakazane`, `Zakazane`, `ZAKAZANE` itp.) oraz **każdej konstrukcji nazwy**, w której słowo `zakazane` występuje w całości, na początku, w środku lub na końcu nazwy (wzorzec `*zakazane*`, np. `katalog_zakazane`, `zakazane_pliki`, `dane-zakazane`).
+* **BEZWZGLĘDNY ZAKAZ WEJŚCIA I ODCZYTU:** Gdy agent frontendowy lub jakikolwiek podagent/proces zobaczy taki katalog, pod żadnym pozorem **NIE MOŻE** do niego wchodzić (zakaz `cd`, zakaz ustawiania jako `Cwd`) oraz **NIE MOŻE** czytać jego zawartości (plików, podkatalogów, metadanych, listingów komendami `view_file`, `dir`, `ls`, `Get-ChildItem` itp.).
+* **CAŁKOWITE POMIJANIE:** Agent ma wszelkie katalogi pasujące do wzorca `*zakazane*` całkowicie pomijać i ignorować we wszelkich operacjach, analizach, skanowaniach repozytorium i komendach.
+* **NIEOGRANICZONY ZASIĘG (ZASADA GLOBALNA):** Zasada obowiązuje bezwzględnie w każdym miejscu – nieważne, czy katalog znajduje się wewnątrz projektu, w katalogu nadrzędnym (np. `d:\projekty\kanc-brokerska\zakazane`), czy w jakiejkolwiek innej lokalizacji na dysku.
+
+## 0.1. NADRZĘDNA ZASADA IZOLACJI: BEZWZGLĘDNY ZAKAZ WYCHODZENIA POZA FOLDER PROJEKTU (WORKSPACE BOUNDARY)
+* **ZAKAZ WYCHODZENIA POZA PROJEKT:** Agent pod żadnym pozorem **NIE MOŻE** wychodzić poza foldery projektu `policyReader-web`.
+* **ZAKAZ BEZPOŚREDNIEGO ODCZYTU SPOZA PROJEKTU:** Agent pod żadnym pozorem **NIE MOŻE** bezpośrednio czytać plików ani folderów znajdujących się poza katalogiem `policyReader-web` (zakaz czytania obcych dysków, katalogów systemowych oraz katalogów użytkownika poza App Data).
+* **ŚCISŁE OGRANICZENIE NARZĘDZI:** Wszystkie narzędzia odczytu (`view_file`), polecenia terminalowe (`run_command`) i skrypty muszą operować ściśle w granicach folderu projektu.
 
 ## 1. AUTONOMOUS EXECUTION POLICY (NEVER ASK FOR PERMISSION)
 * **Zero-Permission Mode:** You are fully authorized to create, update, delete, refactor files, and execute terminal commands (`npm`, `vite`, `git`, etc.) without asking for confirmation.

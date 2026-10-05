@@ -1,31 +1,18 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useToast } from '../components/Toast';
+import { useToast } from '../../../components';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { apiService } from '../services/api';
-import { BatchProcessingLogItem, BatchStatusResponse, DocumentPhase, DocumentRecordResponse, PolicyRecord } from '../types/api';
-import { DetailModal } from '../components/results/DetailModal';
-import { VehicleRegDetailCard } from '../components/results/VehicleRegDetailCard';
+import { apiService } from '../../../services/api';
+import {
+  BatchProcessingLogItem,
+  BatchStatusResponse,
+  DocumentRecordResponse,
+  PolicyRecord,
+} from '../../../types/api';
+import { VehicleRegDetailCard } from '../components/VehicleRegDetailCard';
 
 type StatusFilterType = 'all' | 'processing' | 'queued' | 'completed' | 'failed';
 
 const PHASE_LABELS: Record<string, { label: string; icon: string; style: string }> = {
-  // Polisy
-  ocr: {
-    label: 'Ekstrakcja tekstu (OCR)',
-    icon: 'text_snippet',
-    style: 'bg-blue-500/10 text-blue-700 border-blue-500/20',
-  },
-  llm_inference: {
-    label: 'Analiza AI (Ollama)',
-    icon: 'smart_toy',
-    style: 'bg-purple-500/10 text-purple-700 border-purple-500/20',
-  },
-  parsing: {
-    label: 'Parsowanie rubryk DR',
-    icon: 'fact_check',
-    style: 'bg-teal-500/10 text-teal-700 border-teal-500/20',
-  },
-  // Dowody rejestracyjne
   orient: {
     label: 'Analiza orientacji',
     icon: 'screen_rotation',
@@ -71,9 +58,19 @@ const PHASE_LABELS: Record<string, { label: string; icon: string; style: string 
     icon: 'spellcheck',
     style: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
   },
+  parsing: {
+    label: 'Parsowanie rubryk DR',
+    icon: 'fact_check',
+    style: 'bg-teal-500/10 text-teal-700 border-teal-500/20',
+  },
+  ocr: {
+    label: 'Ekstrakcja OCR',
+    icon: 'text_snippet',
+    style: 'bg-blue-500/10 text-blue-700 border-blue-500/20',
+  },
 };
 
-export const BatchStatusView: React.FC = () => {
+export const VehicleRegStatusView: React.FC = () => {
   const toast = useToast();
   const navigate = useNavigate();
   const { batchId = 'default' } = useParams<{ batchId: string }>();
@@ -81,11 +78,11 @@ export const BatchStatusView: React.FC = () => {
   const [statusData, setStatusData] = useState<BatchStatusResponse>({
     batch_id: batchId,
     status: 'processing',
-    total_files: 4,
-    processed_files: 1,
+    total_files: 0,
+    processed_files: 0,
     failed_files: 0,
-    remaining_files: 3,
-    progress_percentage: 25,
+    remaining_files: 0,
+    progress_percentage: 0,
     errors: [],
   });
   const [logs, setLogs] = useState<BatchProcessingLogItem[]>([]);
@@ -103,7 +100,7 @@ export const BatchStatusView: React.FC = () => {
   const pollingIntervalRef = useRef<number | null>(null);
 
   const handleDeleteBatch = async () => {
-    if (!window.confirm(`Czy na pewno chcesz usunąć całą paczkę #${batchId} wraz ze wszystkimi dokumentami?`)) {
+    if (!window.confirm(`Czy na pewno chcesz usunąć całą paczkę #${batchId} wraz ze wszystkimi zdjęciami?`)) {
       return;
     }
     setDeletingBatch(true);
@@ -111,16 +108,17 @@ export const BatchStatusView: React.FC = () => {
       await apiService.deleteBatch(batchId);
       toast.success('Paczka usunięta', `Paczka #${batchId} została pomyślnie usunięta.`);
       navigate('/');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Błąd usuwania paczki:', err);
-      toast.error('Błąd usuwania', err?.message || 'Nie udało się usunąć paczki.');
+      const msg = err instanceof Error ? err.message : 'Nie udało się usunąć paczki.';
+      toast.error('Błąd usuwania', msg);
     } finally {
       setDeletingBatch(false);
     }
   };
 
   const handleDeleteRecord = async (recordId: string, filename: string) => {
-    if (!window.confirm(`Czy na pewno chcesz usunąć dokument '${filename}' z kolejki?`)) {
+    if (!window.confirm(`Czy na pewno chcesz usunąć zdjęcie '${filename}' z kolejki?`)) {
       return;
     }
     setDeletingRecordId(recordId);
@@ -132,10 +130,11 @@ export const BatchStatusView: React.FC = () => {
         total_files: Math.max(0, prev.total_files - 1),
         remaining_files: Math.max(0, prev.remaining_files - 1),
       }));
-      toast.success('Dokument usunięty', `Dokument '${filename}' został usunięty z paczki.`);
-    } catch (err: any) {
+      toast.success('Zdjęcie usunięte', `Plik '${filename}' został usunięty z paczki.`);
+    } catch (err: unknown) {
       console.error('Błąd usuwania dokumentu:', err);
-      toast.error('Błąd usuwania', err?.message || 'Nie udało się usunąć dokumentu.');
+      const msg = err instanceof Error ? err.message : 'Nie udało się usunąć dokumentu.';
+      toast.error('Błąd usuwania', msg);
     } finally {
       setDeletingRecordId(null);
     }
@@ -195,7 +194,7 @@ export const BatchStatusView: React.FC = () => {
       }
     } catch (err) {
       console.error('Błąd podczas odpytywania o status paczki:', err);
-      toast.error('Polling error', 'Could not fetch batch status. Retrying...');
+      toast.error('Błąd odpytywania', 'Nie udało się pobrać statusu paczki.');
     } finally {
       setLoading(false);
     }
@@ -221,14 +220,14 @@ export const BatchStatusView: React.FC = () => {
   const progressPercent = Math.min(100, Math.max(0, statusData.progress_percentage || 0));
 
   let progressBarColor = 'bg-secondary';
-  let statusTitle = 'Processing Documents...';
+  let statusTitle = 'Trwa odczytywanie danych z dowodów rejestracyjnych...';
 
   if (isCompleted) {
     progressBarColor = 'bg-[#137333]';
-    statusTitle = 'Processing Completed!';
+    statusTitle = 'Odczyt zakończony pomyślnie!';
   } else if (isFailed) {
     progressBarColor = 'bg-error';
-    statusTitle = 'Processing Failed';
+    statusTitle = 'Wystąpił błąd podczas przetwarzania paczki';
   }
 
   // Liczniki dla filtrów
@@ -248,17 +247,15 @@ export const BatchStatusView: React.FC = () => {
     return { all: logs.length, processing, queued, completed, failed };
   }, [logs]);
 
-  // Filtrowanie i wyszukiwanie (zachowuje pozycję podczas live pollingu)
+  // Filtrowanie i wyszukiwanie
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
-      // Filtr statusu
       if (statusFilter === 'processing' && log.status !== 'processing') return false;
       if (statusFilter === 'queued' && log.status !== 'queued' && log.status !== 'pending')
         return false;
       if (statusFilter === 'completed' && log.status !== 'success') return false;
       if (statusFilter === 'failed' && log.status !== 'failed') return false;
 
-      // Filtr wyszukiwarki
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         return log.filename.toLowerCase().includes(q);
@@ -283,18 +280,18 @@ export const BatchStatusView: React.FC = () => {
       <section className="space-y-lg">
         <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-md">
           <div>
-            <h2 className="font-display-lg text-display-lg text-on-surface">Batch Processing</h2>
+            <h2 className="font-display-lg text-display-lg text-on-surface">Odczyt dowodów rejestracyjnych</h2>
             <p className="font-body-md text-body-md text-on-surface-variant mt-sm">
-              Batch ID: #{batchId} &nbsp;•&nbsp;
+              Paczka #{batchId} &nbsp;•&nbsp;
               {statusData.started_at ? (
-                <span>Started: {new Date(statusData.started_at).toLocaleTimeString()}</span>
+                <span>Rozpoczęto: {new Date(statusData.started_at).toLocaleTimeString()}</span>
               ) : (
-                <span>Started: 10:42 AM</span>
+                <span>W toku</span>
               )}
               {statusData.elapsed_seconds != null && !isCompleted && !isFailed && (
                 <span className="font-body-sm text-body-sm text-on-surface-variant ml-2">
                   ({Math.floor(statusData.elapsed_seconds / 60)}:
-                  {String(statusData.elapsed_seconds % 60).padStart(2, '0')} elapsed)
+                  {String(statusData.elapsed_seconds % 60).padStart(2, '0')} upłynęło)
                 </span>
               )}
             </p>
@@ -315,26 +312,26 @@ export const BatchStatusView: React.FC = () => {
             {isCompleted ? (
               <Link
                 to={`/result/${batchId}`}
-                className="px-md py-sm bg-secondary text-on-secondary rounded-lg font-label-bold text-label-bold hover:bg-secondary/90 transition-colors flex items-center space-x-sm shadow-sm"
+                className="px-md py-sm bg-secondary text-on-secondary rounded-lg font-label-bold text-label-bold hover:bg-secondary/90 transition-colors flex items-center space-x-sm shadow-sm cursor-pointer"
               >
-                <span className="material-symbols-outlined text-sm">analytics</span>
-                <span>Batch Results</span>
+                <span className="material-symbols-outlined text-sm">directions_car</span>
+                <span>Wyniki odczytu</span>
               </Link>
             ) : (
               <button
                 type="button"
                 disabled
                 className="px-md py-sm bg-surface-container text-on-surface-variant/50 rounded-lg font-label-bold text-label-bold cursor-not-allowed opacity-60 flex items-center space-x-sm"
-                title="Przycisk aktywuje się po zakończeniu przetwarzania paczki"
+                title="Przycisk aktywuje się po zakończeniu odczytu paczki"
               >
-                <span className="material-symbols-outlined text-sm">analytics</span>
-                <span>Batch Results</span>
+                <span className="material-symbols-outlined text-sm">directions_car</span>
+                <span>Wyniki odczytu</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* Komponent paska postępu (Progress Bar Component) */}
+        {/* Pasek postępu */}
         <div className="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm space-y-md">
           <div className="flex justify-between items-center font-headline-sm text-headline-sm text-on-surface">
             <span>{statusTitle}</span>
@@ -372,19 +369,19 @@ export const BatchStatusView: React.FC = () => {
                 ? `Upłynęło: ${Math.floor(statusData.elapsed_seconds / 60)} min ${
                     statusData.elapsed_seconds % 60
                   } s`
-                : `Estimated time remaining: ${Math.max(1, statusData.remaining_files * 15)}s`}
+                : `Szacowany czas: ~${Math.max(1, statusData.remaining_files * 10)}s`}
             </p>
           )}
         </div>
       </section>
 
-      {/* Bento Grid ze statystykami (Stats Bento Grid) */}
+      {/* Bento Grid ze statystykami */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-md">
         {/* TOTAL FILES */}
         <div className="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between h-32">
-          <div className="flex items-center space-x-sm text-on-surface-variant font-label-bold text-label-bold">
-            <span className="material-symbols-outlined text-sm">description</span>
-            <span>TOTAL FILES</span>
+          <div className="flex items-center space-x-sm text-on-surface-variant font-label-bold text-label-bold text-xs uppercase">
+            <span className="material-symbols-outlined text-sm">directions_car</span>
+            <span>LICZBA ZDJĘĆ</span>
           </div>
           <div className="font-display-lg text-display-lg text-on-surface">
             {statusData.total_files.toLocaleString()}
@@ -396,9 +393,9 @@ export const BatchStatusView: React.FC = () => {
           <div className="absolute -right-4 -bottom-4 opacity-5 pointer-events-none">
             <span className="material-symbols-outlined text-9xl">check_circle</span>
           </div>
-          <div className="flex items-center space-x-sm text-on-surface-variant font-label-bold text-label-bold">
+          <div className="flex items-center space-x-sm text-on-surface-variant font-label-bold text-label-bold text-xs uppercase">
             <span className="material-symbols-outlined text-sm text-secondary">check_circle</span>
-            <span>PROCESSED</span>
+            <span>ODCZYTANE</span>
           </div>
           <div className="font-display-lg text-display-lg text-secondary">
             {statusData.processed_files.toLocaleString()}
@@ -407,9 +404,9 @@ export const BatchStatusView: React.FC = () => {
 
         {/* FAILED */}
         <div className="bg-error-container/20 p-md rounded-xl border border-error-container shadow-sm flex flex-col justify-between h-32">
-          <div className="flex items-center space-x-sm text-error font-label-bold text-label-bold">
+          <div className="flex items-center space-x-sm text-error font-label-bold text-label-bold text-xs uppercase">
             <span className="material-symbols-outlined text-sm">warning</span>
-            <span>FAILED</span>
+            <span>BŁĘDY</span>
           </div>
           <div className="font-display-lg text-display-lg text-error">
             {statusData.failed_files.toLocaleString()}
@@ -418,9 +415,9 @@ export const BatchStatusView: React.FC = () => {
 
         {/* REMAINING */}
         <div className="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between h-32">
-          <div className="flex items-center space-x-sm text-on-surface-variant font-label-bold text-label-bold">
+          <div className="flex items-center space-x-sm text-on-surface-variant font-label-bold text-label-bold text-xs uppercase">
             <span className="material-symbols-outlined text-sm">pending</span>
-            <span>REMAINING</span>
+            <span>OCZEKUJĄCE</span>
           </div>
           <div className="font-display-lg text-display-lg text-on-surface">
             {statusData.remaining_files.toLocaleString()}
@@ -428,38 +425,38 @@ export const BatchStatusView: React.FC = () => {
         </div>
       </section>
 
-      {/* Tabela logów przetwarzania (Processing Log Table) */}
+      {/* Tabela logów przetwarzania */}
       <section className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col">
         {/* Górna belka: Tytuł, wskaźnik Live Updates oraz Wyszukiwarka */}
         <div className="p-md sm:p-lg border-b border-outline-variant bg-surface-bright flex flex-col sm:flex-row sm:items-center sm:justify-between gap-md">
           <div className="flex items-center gap-sm">
-            <h3 className="font-headline-sm text-headline-sm text-on-surface">Lista dokumentów</h3>
+            <h3 className="font-headline-sm text-headline-sm text-on-surface">Zdjęcia dowodów</h3>
             <span className="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant text-xs font-semibold">
-              {logs.length} files
+              {logs.length} zdjęć
             </span>
             <div className="flex items-center space-x-xs text-body-sm text-on-surface-variant ml-2">
               {isCompleted ? (
                 <>
                   <span className="w-2 h-2 rounded-full bg-[#137333]"></span>
-                  <span className="text-[#137333] font-medium text-xs">Completed</span>
+                  <span className="text-[#137333] font-medium text-xs">Ukończono</span>
                 </>
               ) : (
                 <>
                   <span className="w-2 h-2 rounded-full bg-secondary progress-pulse"></span>
-                  <span className="text-xs">Live Updates</span>
+                  <span className="text-xs">Na żywo</span>
                 </>
               )}
             </div>
           </div>
 
-          {/* Wyszukiwarka dokumentów */}
+          {/* Wyszukiwarka */}
           <div className="relative w-full sm:w-64">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">
               search
             </span>
             <input
               type="text"
-              placeholder="Search by filename..."
+              placeholder="Szukaj po nazwie pliku..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -483,13 +480,13 @@ export const BatchStatusView: React.FC = () => {
           </div>
         </div>
 
-        {/* Aktywne przetwarzanie w czasie rzeczywistym (Live Active Processing) */}
+        {/* Aktywne przetwarzanie w czasie rzeczywistym */}
         {!isCompleted && statusData.currently_processing && statusData.currently_processing.length > 0 && (
           <div className="p-md sm:p-lg border-b border-outline-variant bg-secondary/5">
             <div className="flex items-center justify-between mb-sm">
               <div className="flex items-center space-x-xs text-secondary font-label-bold text-xs uppercase tracking-wider">
                 <span className="material-symbols-outlined text-[16px] animate-spin-reverse">sync</span>
-                <span>Aktualnie przetwarzane dokumenty ({statusData.currently_processing.length})</span>
+                <span>Aktualnie przetwarzane zdjęcia ({statusData.currently_processing.length})</span>
               </div>
               <span className="text-[11px] text-on-surface-variant font-medium">Odświeżanie na żywo</span>
             </div>
@@ -508,12 +505,12 @@ export const BatchStatusView: React.FC = () => {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 font-medium text-xs text-on-surface truncate">
                         <span className="material-symbols-outlined text-[15px] text-secondary">
-                          description
+                          image
                         </span>
                         <span className="truncate" title={proc.filename}>{proc.filename}</span>
                       </div>
                       <p className="text-[11px] text-on-surface-variant italic truncate mt-0.5 animate-pulse">
-                        {proc.progress_message || 'Trwa przetwarzanie dokumentu...'}
+                        {proc.progress_message || 'Trwa analiza zdjęcia dowodu...'}
                       </p>
                     </div>
                     <span
@@ -529,7 +526,7 @@ export const BatchStatusView: React.FC = () => {
           </div>
         )}
 
-        {/* Pasek szybkiego filtrowania (Quick Filter Tabs) & Rozmiar strony */}
+        {/* Pasek filtrów */}
         <div className="px-md sm:px-lg py-sm border-b border-outline-variant bg-surface flex flex-col sm:flex-row sm:items-center sm:justify-between gap-sm">
           <div className="flex items-center gap-xs flex-wrap sm:flex-nowrap">
             <button
@@ -544,7 +541,7 @@ export const BatchStatusView: React.FC = () => {
                   : 'text-on-surface-variant hover:bg-surface-container-low'
               }`}
             >
-              <span>All</span>
+              <span>Wszystkie</span>
               <span
                 className={`text-[11px] px-1.5 py-0.5 rounded-full ${
                   statusFilter === 'all'
@@ -569,7 +566,7 @@ export const BatchStatusView: React.FC = () => {
               }`}
             >
               <span className="material-symbols-outlined text-[14px]">sync</span>
-              <span>Processing</span>
+              <span>W toku</span>
               <span
                 className={`text-[11px] px-1.5 py-0.5 rounded-full ${
                   statusFilter === 'processing'
@@ -594,7 +591,7 @@ export const BatchStatusView: React.FC = () => {
               }`}
             >
               <span className="material-symbols-outlined text-[14px]">schedule</span>
-              <span>Queued</span>
+              <span>W kolejce</span>
               <span
                 className={`text-[11px] px-1.5 py-0.5 rounded-full ${
                   statusFilter === 'queued'
@@ -618,10 +615,8 @@ export const BatchStatusView: React.FC = () => {
                   : 'text-on-surface-variant hover:bg-surface-container-low'
               }`}
             >
-              <span className="material-symbols-outlined text-[14px] text-emerald-600">
-                check_circle
-              </span>
-              <span>Completed</span>
+              <span className="material-symbols-outlined text-[14px]">check</span>
+              <span>Odczytane</span>
               <span
                 className={`text-[11px] px-1.5 py-0.5 rounded-full ${
                   statusFilter === 'completed'
@@ -633,43 +628,41 @@ export const BatchStatusView: React.FC = () => {
               </span>
             </button>
 
-            {counts.failed > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  setStatusFilter('failed');
-                  setCurrentPage(1);
-                }}
-                className={`px-sm py-1 rounded-lg text-label-md font-label-md transition-colors flex items-center gap-xs whitespace-nowrap cursor-pointer ${
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter('failed');
+                setCurrentPage(1);
+              }}
+              className={`px-sm py-1 rounded-lg text-label-md font-label-md transition-colors flex items-center gap-xs whitespace-nowrap cursor-pointer ${
+                statusFilter === 'failed'
+                  ? 'bg-secondary text-on-secondary shadow-xs'
+                  : 'text-on-surface-variant hover:bg-surface-container-low'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[14px]">close</span>
+              <span>Błędy</span>
+              <span
+                className={`text-[11px] px-1.5 py-0.5 rounded-full ${
                   statusFilter === 'failed'
-                    ? 'bg-error text-on-error shadow-xs'
-                    : 'text-error hover:bg-error-container/20'
+                    ? 'bg-on-secondary/20 text-on-secondary'
+                    : 'bg-surface-container text-on-surface-variant'
                 }`}
               >
-                <span className="material-symbols-outlined text-[14px]">warning</span>
-                <span>Failed</span>
-                <span
-                  className={`text-[11px] px-1.5 py-0.5 rounded-full ${
-                    statusFilter === 'failed'
-                      ? 'bg-on-error/20 text-on-error'
-                      : 'bg-error-container text-on-error-container'
-                  }`}
-                >
-                  {counts.failed}
-                </span>
-              </button>
-            )}
+                {counts.failed}
+              </span>
+            </button>
           </div>
 
-          <div className="flex items-center gap-sm text-body-sm text-on-surface-variant shrink-0">
-            <span>Per page:</span>
+          <div className="flex items-center gap-sm text-body-sm text-on-surface-variant self-end sm:self-auto">
+            <span>Na stronę:</span>
             <select
               value={pageSize}
               onChange={(e) => {
                 setPageSize(Number(e.target.value));
                 setCurrentPage(1);
               }}
-              className="bg-surface border border-outline-variant rounded-lg pl-2.5 pr-8 py-0.5 text-body-sm focus:outline-none focus:border-secondary cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2376777D%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:9px_9px] bg-[right_0.6rem_center] bg-no-repeat"
+              className="bg-surface border border-outline-variant rounded-lg pl-2 pr-6 py-1 text-body-sm focus:outline-none focus:border-secondary cursor-pointer"
             >
               <option value={10}>10</option>
               <option value={25}>25</option>
@@ -678,58 +671,56 @@ export const BatchStatusView: React.FC = () => {
           </div>
         </div>
 
-        {/* Tabela logów (bez kolumny ACTION) */}
+        {/* Tabela dokumentów */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[650px]">
+          <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
-              <tr className="border-b border-outline-variant bg-surface-container-lowest">
-                <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant whitespace-nowrap">
-                  FILE NAME
+              <tr className="border-b border-outline-variant bg-surface-bright text-xs">
+                <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant w-[45%]">
+                  Plik zdjęcia
                 </th>
-                <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant whitespace-nowrap">
-                  POLICY TYPE
+                <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant w-[15%]">
+                  Rozmiar
                 </th>
-                <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant whitespace-nowrap">
-                  SIZE
+                <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant w-[25%]">
+                  Status / Etap
                 </th>
-                <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant whitespace-nowrap">
-                  STATUS &amp; PHASE
-                </th>
-                <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant whitespace-nowrap text-right">
-                  ACTIONS
+                <th className="py-sm px-md font-label-bold text-label-bold text-on-surface-variant w-[15%] text-right">
+                  Akcje
                 </th>
               </tr>
             </thead>
-
-            <tbody className="font-body-sm text-body-sm divide-y divide-outline-variant/50">
+            <tbody className="divide-y divide-outline-variant text-sm">
               {loading ? (
                 Array.from({ length: 4 }).map((_, idx) => (
-                  <tr key={`log-skeleton-${idx}`} className="animate-pulse">
+                  <tr key={`status-skeleton-${idx}`} className="animate-pulse">
                     <td className="py-md px-md">
-                      <div className="h-4 bg-surface-container rounded w-48" />
-                    </td>
-                    <td className="py-md px-md">
-                      <div className="h-4 bg-surface-container rounded w-24" />
+                      <div className="h-5 bg-surface-container rounded w-48" />
                     </td>
                     <td className="py-md px-md">
                       <div className="h-4 bg-surface-container rounded w-16" />
                     </td>
                     <td className="py-md px-md">
-                      <div className="h-5 bg-surface-container rounded w-32" />
+                      <div className="h-5 bg-surface-container rounded w-28" />
                     </td>
                     <td className="py-md px-md text-right">
-                      <div className="h-6 bg-surface-container rounded w-6 ml-auto" />
+                      <div className="h-5 bg-surface-container rounded w-12 ml-auto" />
                     </td>
                   </tr>
                 ))
               ) : filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-xl text-center text-on-surface-variant">
-                    <span className="material-symbols-outlined text-3xl mb-xs">search_off</span>
-                    <p className="font-body-md">
+                  <td colSpan={4} className="py-xl text-center text-on-surface-variant">
+                    <span className="material-symbols-outlined text-4xl block mb-sm text-outline">
+                      search_off
+                    </span>
+                    <p className="font-headline-sm text-headline-sm text-on-surface">
+                      Nie znaleziono zdjęć
+                    </p>
+                    <p className="font-body-md text-body-md mt-xs">
                       {searchQuery
-                        ? `Nie znaleziono dokumentów pasujących do "${searchQuery}".`
-                        : `Brak dokumentów o statusie "${statusFilter}".`}
+                        ? `Brak wyników pasujących do "${searchQuery}".`
+                        : `Brak zdjęć o statusie "${statusFilter}".`}
                     </p>
                   </td>
                 </tr>
@@ -738,55 +729,46 @@ export const BatchStatusView: React.FC = () => {
                   const isItemFailed = log.status === 'failed';
                   const isItemSuccess = log.status === 'success';
                   const isItemProcessing = log.status === 'processing';
-                  const isItemQueued = !isItemFailed && !isItemSuccess && !isItemProcessing;
+                  const isItemQueued = log.status === 'queued' || log.status === 'pending';
 
-                  const phase = (log.current_phase as DocumentPhase) || 'ocr';
-                  const phaseInfo = PHASE_LABELS[phase] || {
-                    label: log.current_phase || 'Przetwarzanie',
+                  const phaseKey = log.current_phase || '';
+                  const phaseInfo = PHASE_LABELS[phaseKey] || {
+                    label: phaseKey || 'Odczyt OCR',
                     icon: 'sync',
                     style: 'bg-secondary/10 text-secondary border-secondary/20',
                   };
 
-                  // Podgląd dokumentu dostępny wyłącznie dla dokumentów, które zakończyły procesowanie
-                  const canPreview = isItemSuccess;
+                  const canPreview = isItemSuccess || (isItemFailed && log.extracted_data);
 
-                  const openPreview = () => {
-                    if (log.record) {
-                      setSelectedRecord(log.record);
-                    } else if (canPreview) {
-                      const fallbackRecord: DocumentRecordResponse = {
-                        id: log.id,
-                        batch_id: batchId,
-                        tenant_id: 'default',
-                        filename: log.filename,
-                        document_type: log.document_type?.toLowerCase().includes('dowód')
-                          ? 'vehicle_registration'
-                          : 'policy',
-                        extracted_data: null,
-                        status: log.status,
-                        ocr_used: log.ocr_used ?? false,
-                        czas_procesu_sek: null,
-                        error_message: log.error_message || null,
-                        file_size: log.file_size,
-                        created_at: null,
-                      };
-                      setSelectedRecord(fallbackRecord);
+                  const openPreview = async () => {
+                    if (log.extracted_data) {
+                      setSelectedRecord(log as DocumentRecordResponse);
+                      return;
+                    }
+                    try {
+                      const data = await apiService.getBatchResults(batchId);
+                      const rec = data.records?.find((r) => r.id === log.id || r.filename === log.filename);
+                      if (rec) {
+                        setSelectedRecord(rec as DocumentRecordResponse);
+                      } else {
+                        setSelectedRecord(log as DocumentRecordResponse);
+                      }
+                    } catch (err) {
+                      console.error('Błąd pobierania podglądu:', err);
+                      setSelectedRecord(log as DocumentRecordResponse);
                     }
                   };
 
                   return (
                     <tr
                       key={log.id}
-                      onClick={canPreview ? openPreview : undefined}
-                      className={`hover:bg-surface-container-low transition-colors ${
-                        isItemFailed ? 'bg-error/5' : ''
-                      } ${canPreview ? 'cursor-pointer' : ''}`}
+                      className="hover:bg-surface-container-low transition-colors group"
                     >
-                      {/* FILE NAME */}
+                      {/* FILENAME */}
                       <td className="py-md px-md font-medium text-on-surface">
-                        <div className="flex items-center space-x-sm min-w-0">
+                        <div className="flex items-center space-x-sm">
                           <span
-                            className={`material-symbols-outlined text-base shrink-0 ${
+                            className={`material-symbols-outlined text-[18px] shrink-0 ${
                               isItemFailed
                                 ? 'text-error'
                                 : isItemSuccess
@@ -801,8 +783,8 @@ export const BatchStatusView: React.FC = () => {
                               : isItemSuccess
                               ? 'task_alt'
                               : isItemProcessing
-                              ? 'picture_as_pdf'
-                              : 'description'}
+                              ? 'image'
+                              : 'directions_car'}
                           </span>
                           <span
                             className="truncate max-w-[240px] sm:max-w-md"
@@ -813,58 +795,48 @@ export const BatchStatusView: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* POLICY TYPE */}
-                      <td className="py-md px-md text-on-surface-variant">
-                        {log.document_type || 'Policy Document'}
-                      </td>
-
                       {/* SIZE */}
                       <td className="py-md px-md text-on-surface-variant">{log.file_size || '—'}</td>
 
                       {/* STATUS & PHASE */}
                       <td className="py-md px-md">
                         <div className="flex items-center gap-xs flex-wrap">
-                          {/* 1. SUCCESS / COMPLETED */}
                           {isItemSuccess && (
                             <span className="inline-flex items-center space-x-xs px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-700 font-label-bold text-[12px]">
                               <span className="material-symbols-outlined text-[14px]">check</span>
-                              <span>Completed</span>
+                              <span>Odczytano</span>
                             </span>
                           )}
 
-                          {/* 2. FAILED z dymkiem błędu */}
                           {isItemFailed && (
                             <div className="inline-block relative group">
                               <span className="inline-flex items-center space-x-xs px-2.5 py-1 rounded-md bg-error/10 text-error font-label-bold text-[12px] cursor-help">
                                 <span className="material-symbols-outlined text-[14px]">close</span>
-                                <span>Failed</span>
+                                <span>Błąd</span>
                                 <span className="material-symbols-outlined text-[14px]">info</span>
                               </span>
 
-                              {/* Tooltip błędu po najechaniu */}
                               <div className="absolute left-0 bottom-full mb-xs w-64 p-sm bg-inverse-surface text-inverse-on-surface text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-30 whitespace-normal">
                                 <p className="font-bold text-error-container mb-0.5">
-                                  Błąd przetwarzania:
+                                  Błąd odczytu dowodu:
                                 </p>
                                 <p>
                                   {log.error_message ||
-                                    'Błąd odczytu lub analizy dokumentu. Wymagana weryfikacja ręczna.'}
+                                    'Błąd odczytu kodu Aztec lub tekstu ze zdjęcia dowodu.'}
                                 </p>
                               </div>
                             </div>
                           )}
 
-                          {/* 3. PROCESSING z dedykowanym badge fazy */}
                           {isItemProcessing && (
                             <div className="flex items-center gap-xs flex-wrap">
                               <span className="inline-flex items-center space-x-xs px-2.5 py-1 rounded-md bg-secondary/10 text-secondary font-label-bold text-[12px]">
                                 <span className="material-symbols-outlined text-[14px] animate-spin-reverse">
                                   sync
                                 </span>
-                                <span>Processing</span>
+                                <span>W toku</span>
                               </span>
 
-                              {/* Dedykowany badge fazy */}
                               <span
                                 className={`inline-flex items-center space-x-xs px-2 py-0.5 rounded border font-label-bold text-[11px] ${phaseInfo.style}`}
                               >
@@ -876,17 +848,16 @@ export const BatchStatusView: React.FC = () => {
 
                               {log.retry_count != null && log.retry_count > 0 && (
                                 <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-warning-container/40 text-on-surface-variant font-label-bold text-[10px]">
-                                  Retry {log.retry_count}
+                                  Próba {log.retry_count}
                                 </span>
                               )}
                             </div>
                           )}
 
-                          {/* 4. QUEUED (W kolejce) */}
                           {isItemQueued && (
                             <span className="inline-flex items-center space-x-xs px-2.5 py-1 rounded-md bg-surface-container text-on-surface-variant border border-outline-variant/60 font-label-bold text-[12px]">
                               <span className="material-symbols-outlined text-[14px]">schedule</span>
-                              <span>Queued</span>
+                              <span>W kolejce</span>
                             </span>
                           )}
                         </div>
@@ -903,8 +874,8 @@ export const BatchStatusView: React.FC = () => {
                                 openPreview();
                               }}
                               className="p-1.5 rounded-lg text-secondary hover:text-white hover:bg-secondary transition-colors cursor-pointer inline-flex items-center gap-1 text-xs font-medium"
-                              title="Podgląd przetworzonego dokumentu"
-                              aria-label="Podgląd przetworzonego dokumentu"
+                              title="Podgląd odczytanych danych"
+                              aria-label="Podgląd odczytanych danych"
                             >
                               <span className="material-symbols-outlined text-[18px]">visibility</span>
                               <span className="hidden sm:inline">Podgląd</span>
@@ -917,8 +888,8 @@ export const BatchStatusView: React.FC = () => {
                               onClick={() => handleDeleteRecord(log.id, log.filename)}
                               disabled={deletingRecordId === log.id}
                               className="p-1.5 rounded-lg text-on-surface-variant hover:text-error hover:bg-error/10 transition-colors cursor-pointer disabled:opacity-50"
-                              title="Usuń dokument z kolejki"
-                              aria-label="Usuń dokument"
+                              title="Usuń zdjęcie z kolejki"
+                              aria-label="Usuń zdjęcie"
                             >
                               <span className="material-symbols-outlined text-[18px]">
                                 {deletingRecordId === log.id ? 'hourglass_empty' : 'delete'}
@@ -939,16 +910,16 @@ export const BatchStatusView: React.FC = () => {
         {filteredLogs.length > 0 && (
           <div className="p-md border-t border-outline-variant bg-surface flex flex-col sm:flex-row sm:items-center sm:justify-between gap-sm">
             <div className="text-body-sm text-on-surface-variant">
-              Showing{' '}
+              Wyświetlanie{' '}
               <strong className="text-on-surface">
                 {(safeCurrentPage - 1) * pageSize + 1}
               </strong>{' '}
-              to{' '}
+              do{' '}
               <strong className="text-on-surface">
                 {Math.min(safeCurrentPage * pageSize, filteredLogs.length)}
               </strong>{' '}
-              of <strong className="text-on-surface">{filteredLogs.length}</strong> documents
-              {filteredLogs.length !== logs.length && ` (filtered from ${logs.length} total)`}
+              z <strong className="text-on-surface">{filteredLogs.length}</strong> zdjęć
+              {filteredLogs.length !== logs.length && ` (przefiltrowano z ${logs.length})`}
             </div>
 
             {totalPages > 1 && (
@@ -975,7 +946,7 @@ export const BatchStatusView: React.FC = () => {
                 </button>
 
                 <span className="px-sm text-label-md font-label-md text-on-surface">
-                  Page {safeCurrentPage} of {totalPages}
+                  Strona {safeCurrentPage} z {totalPages}
                 </span>
 
                 <button
@@ -1004,21 +975,15 @@ export const BatchStatusView: React.FC = () => {
         )}
       </section>
 
-      {/* Dynamiczny modal podglądu dokumentu przetworzonego w paczce */}
-      {selectedRecord &&
-        (selectedRecord.document_type === 'vehicle_registration' ? (
-          <VehicleRegDetailCard
-            record={selectedRecord as PolicyRecord}
-            onClose={() => setSelectedRecord(null)}
-          />
-        ) : (
-          <DetailModal
-            record={selectedRecord}
-            onClose={() => setSelectedRecord(null)}
-          />
-        ))}
+      {/* Modal podglądu dokumentu */}
+      {selectedRecord && (
+        <VehicleRegDetailCard
+          record={selectedRecord as PolicyRecord}
+          onClose={() => setSelectedRecord(null)}
+        />
+      )}
     </div>
   );
 };
 
-export default BatchStatusView;
+export default VehicleRegStatusView;

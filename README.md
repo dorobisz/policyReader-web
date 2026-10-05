@@ -1,6 +1,7 @@
-# BrokerEngine — Frontend (React + TS + Vite)
+# BrokerEngine / PolicyReader — Frontend (React + TS + Vite)
 
-Interfejs użytkownika systemu **BrokerEngine** do ekstrakcji danych z polis ubezpieczeniowych. Zbudowany w React + TypeScript na bazie Vite, stylowany Tailwind CSS według własnego Design Systemu.
+Interfejs użytkownika systemu **BrokerEngine** ze zorientowaną domenowo architekturą modułową (Feature-based Architecture).
+Głównym modułem produkcyjnym jest **Czytnik Dowodów Rejestracyjnych** (ekstrakcja kodów Aztec 2D i danych OCR ze zdjęć dowodów rejestracyjnych pojazdów w formacie JPG).
 
 ---
 
@@ -9,7 +10,7 @@ Interfejs użytkownika systemu **BrokerEngine** do ekstrakcji danych z polis ube
 | Technologia | Wersja | Rola |
 |---|---|---|
 | React | ^19 | UI framework |
-| TypeScript | ^7 | Typowanie |
+| TypeScript | ^5.9 | Typowanie w trybie ścisłym (Strict Mode) |
 | Vite | ^8 | Bundler / Dev server |
 | Tailwind CSS | ^3.4 | Stylowanie (custom design tokens) |
 | react-router-dom | ^7 | Routing SPA |
@@ -29,85 +30,88 @@ npm run preview  # Podgląd buildu
 
 ---
 
-## Struktura projektu
+## Architektura i Struktura Pakietów (Feature-based Architecture)
+
+Projekt stosuje modularyzację domenową, oddzielając komponenty wspólne UI (`components/`) od pakietów funkcjonalnych (`features/`). Zapewnia to izolację obecnego czytnika dowodów rejestracyjnych oraz bezkolizyjne wpinanie przyszłych modułów (np. analizatora polis).
 
 ```
 policyReader-web/
-├── index.html                 # ✅ Entry HTML (Vite)
-├── vite.config.ts             # ✅ Vite config (React plugin, @ alias)
-├── tsconfig.json              # ✅ TypeScript strict mode config
-├── tailwind.config.js         # ✅ Design tokens (kolory, typografia, spacing)
-├── postcss.config.js          # ✅ PostCSS (Tailwind + Autoprefixer)
+├── .agents/
+│   └── rules/
+│       ├── forbidden-directory.md  # 🛡️ Nadrzędna reguła: zakaz dostępu do katalogu "Zakazane"
+│       ├── workspace-boundary.md   # 🛡️ Nadrzędna reguła: zakaz wychodzenia poza projekt
+│       └── global_directive.md     # Dyrektywy pracy agenta frontendowego
+├── AGENTS.md                       # 🛡️ Nadrzędne dyrektywy bezpieczeństwa agenta
+├── index.html                      # Entry HTML (Vite)
+├── vite.config.ts                  # Vite config (React plugin, @ alias)
+├── tsconfig.json                   # TypeScript strict mode config
+├── tailwind.config.js              # Design tokens (kolory, typografia, spacing)
+├── postcss.config.js               # PostCSS (Tailwind + Autoprefixer)
 ├── src/
-│   ├── main.tsx               # ✅ Entry point (importuje index.css)
-│   ├── index.css              # ✅ Globalne style (Tailwind, Inter, Material Symbols)
-│   ├── vite-env.d.ts          # ✅ Vite client type declarations
+│   ├── main.tsx                    # Entry point & Routing SPA
+│   ├── index.css                   # Globalne style (Tailwind, Inter, Material Symbols)
+│   ├── vite-env.d.ts               # Vite client type declarations
 │   ├── types/
-│   │   └── api.ts             # ✅ Interfejsy TS: Batch, PolicyRecord, StatsMetrics, DTO
+│   │   └── api.ts                  # Interfejsy TS: Batch, PolicyRecord, VehicleRegistrationData, DTO
 │   ├── services/
-│   │   └── api.ts             # ✅ Serwis komunikacji z API i fallback localStorage
-│   ├── components/
-│   │   ├── index.ts           # ✅ Re-eksporty komponentów i typów
-│   │   ├── AppLayout.tsx      # ✅ Główny szablon (fixowany sidebar, TopAppBar, scrollowany main)
-│   │   ├── SideNavBar.tsx     # ✅ Pasek boczny nawigacji (NavLink, active states, drawer support)
-│   │   ├── StatusBadge.tsx    # ✅ Dynamiczny badge statusów paczek i polis
-│   │   ├── ProgressBar.tsx    # ✅ Komponent paska postępu z kolorami statusów
-│   │   └── MetricCard.tsx     # ✅ Karta metryki Bento Grid ze stanem ładowania
-│   └── pages/
-│       ├── DashboardView.tsx    # ✅ Ścieżka / (Overview, Bento Grid, Recent Batches)
-│       ├── UploadView.tsx       # ✅ Ścieżka /upload (Drag & Drop, walidacja PDF, Start Processing)
-│       ├── BatchStatusView.tsx  # ✅ Ścieżka /jobs/:batchId (Polling, progress-pulse, Bento Grid, logi, tooltipy)
-│       └── BatchResultsView.tsx  # ✅ Ścieżka /result/:batchId (Tabela wyników, filtry, paginacja, eksport CSV)
-├── screen_mockups/              # Makiety HTML Design Systemu
-├── REACT_IMPLEMENTATION_PLAN.md
-└── .agents/rules/global_directive.md
+│   │   └── api.ts                  # Serwis komunikacji z API i fallbacki demonstracyjne
+│   ├── config/
+│   │   ├── appConfig.ts            # Konfiguracja limitów i rozszerzeń (wyłącznie JPG dla dowodów)
+│   │   └── vehicleFields.ts        # Rubryki urzędowe PWPW dowodów rejestracyjnych
+│   ├── hooks/
+│   │   ├── useAppSettings.ts       # Hook pobierania/zapisu konfiguracji tenanta
+│   │   └── useVehicleCopySettings.ts # Hook konfiguracji pól schowka Excela
+│   ├── components/                 # Wspólne reużywalne komponenty UI
+│   │   ├── index.ts                # Re-eksporty komponentów layoutu i common
+│   │   ├── common/
+│   │   │   ├── ErrorBoundary.tsx   # React Error Boundary
+│   │   │   ├── MetricCard.tsx      # Bento Grid Metric Card
+│   │   │   ├── ProgressBar.tsx     # Pasek postępu przetwarzania
+│   │   │   ├── StatusBadge.tsx     # Badge statusów paczek i dokumentów
+│   │   │   └── Toast.tsx           # System powiadomień Toast (Context + Hook)
+│   │   └── layout/
+│   │       ├── AppLayout.tsx       # Główny layout (sidebar, TopAppBar, scrollowany main)
+│   │       └── SideNavBar.tsx      # Pasek boczny nawigacji (Dowody rejestracyjne, Ustawienia)
+│   └── features/                   # Pakiety domenowe
+│       ├── vehicle-registration/   # Moduł: Czytnik Dowodów Rejestracyjnych
+│       │   ├── pages/
+│       │   │   ├── VehicleRegBatchesView.tsx # Ścieżka / (Paczki dowodów, metryki, przycisk Wgraj dowody)
+│       │   │   ├── VehicleRegUploadView.tsx  # Ścieżka /upload (Tylko JPG, wskazówka o 1. stronie dowodu)
+│       │   │   ├── VehicleRegStatusView.tsx  # Ścieżka /jobs/:batchId (Postęp odczytu Aztec/OCR na żywo)
+│       │   │   └── VehicleRegResultsView.tsx # Ścieżka /result/:batchId (Tabela dowodów, modal, eksport CSV)
+│       │   ├── components/
+│       │   │   ├── VehicleRegTable.tsx       # Tabela wyników dowodów rejestracyjnych
+│       │   │   ├── VehicleRegDetailCard.tsx  # Karta szczegółów, 5 sekcji, kopiowanie do Excela/JSON
+│       │   │   └── VehicleRegDetailModal.tsx # Szybki podgląd surowego JSON i metadanych
+│       │   └── index.ts            # Barrel export modułu dowodów
+│       └── settings/               # Moduł: Ustawienia
+│           ├── pages/
+│           │   └── SettingsView.tsx # Ścieżka /settings (Ustawienia schowka dowodów, retencja danych)
+│           ├── components/
+│           │   └── VehicleCopyFieldsConfig.tsx # Konfigurator kolejności rubryk schowka (Drag & Drop)
+│           └── index.ts            # Barrel export modułu ustawień
+└── REACT_IMPLEMENTATION_PLAN.md    # Rejestr postępu prac wdrożeniowych
 ```
 
 ---
 
-## Zaimplementowane komponenty i strony
+## Aktywne Ścieżki i Komponenty Widoków
 
-| Komponent / Plik | Status | Opis |
-|---|---|---|
-| `tailwind.config.js` | ✅ Ukończono | Pełny design system: kolory, typografia, spacing, borderRadius |
-| `postcss.config.js` | ✅ Ukończono | Integracja PostCSS z Tailwind + Autoprefixer |
-| `src/index.css` | ✅ Ukończono | Import Inter, Material Symbols Outlined, dyrektywy Tailwind, animacja pulse |
-| `index.html` | ✅ Ukończono | Entry HTML z preconnect do Google Fonts |
-| `vite.config.ts` | ✅ Ukończono | Plugin React, alias @ → src/ |
-| `tsconfig.json` | ✅ Ukończono | TypeScript strict mode, JSX react-jsx |
-| `src/main.tsx` | ✅ Ukończono | Routing aplikacji (`/`, `/upload`, `/jobs/:batchId`, `/result/:batchId`) |
-| `src/vite-env.d.ts` | ✅ Ukończono | Deklaracje typów Vite client |
-| `src/types/api.ts` | ✅ Ukończono | DTO FastAPI i modele UI: Batch, PolicyRecord, StatsMetrics, Upload |
-| `src/services/api.ts` | ✅ Ukończono | Warstwa API klienta z obsługą pobierania metryk i paczek oraz fallbackiem demonstracyjnym |
-| `src/components/AppLayout.tsx` | ✅ Ukończono | Główny layout aplikacji: fixowany sidebar (desktop), drawer (mobile), sticky TopAppBar, scrollowany main (`<Outlet />`) |
-| `src/components/SideNavBar.tsx` | ✅ Ukończono | Pasek boczny nawigacji: `NavLink` z akcentem wizualnym, profilem brokera i obsługą drawera mobilnego |
-| `src/components/StatusBadge.tsx` | ✅ Ukończono | Dynamiczna odznaka statusu paczki/polisy (Processing/Completed/Failed/Pending) z animacją i kolorystyką Design Systemu |
-| `src/components/ProgressBar.tsx` | ✅ Ukończono | Pasek postępu przetwarzania paczki z automatyczną kolorystyką na podstawie statusu |
-| `src/components/MetricCard.tsx` | ✅ Ukończono | Karta metryki Bento Grid z obsługą wartości, jednostek i stanu szkieletu ładowania |
-| `src/components/index.ts` | ✅ Ukończono | Centralny punkt eksportu komponentów UI i ich typów |
-| `src/config/appConfig.ts` | ✅ Ukończono | Globalna konfiguracja limitów (maks. 200 plików na paczkę, maks. 50 MB na plik, domyślna paginacja) |
-| `src/pages/UploadView.tsx` (`/upload`) | ✅ Ukończono | Strefa Drag & Drop, limit do 200 plików (z ostrzeżeniami toast), wskaźnik zapełnienia paczki (Batch Capacity), wyszukiwarka po nazwie, paginacja (10/25/50), pasek akcji i przycisk Start Processing bezpośrednio nad listą |
-| `src/pages/BatchStatusView.tsx` (`/jobs/:id`) | ✅ Ukończono | Polling statusu (/jobs/{id}/status), animowany pasek postępu (progress-pulse), Bento Grid (4 liczniki), tabela Processing Log z tooltipami błędów OCR i warunkowym przyciskiem Batch Results |
-| `src/pages/BatchResultsView.tsx` (`/result/:id`) | ✅ Ukończono | Tabela wyników ekstrakcji polis: Bento-compatible layout, filtry (insurer, status), sortowanie daty, paginacja (5/str.), odznaki HIGH CONF./REVIEW, eksport CSV (API + fallback client-side), przycisk RESOLVE, skeleton loading |
-| `src/services/api.ts` | ✅ Ukończono | Rozszerzono o `getBatchResults()` (10 rek. demo) i `downloadBatchCsv()` (API + CSV client-side fallback) |
-| `src/components/Toast.tsx` | ✅ Ukończono | Globalny system Toast: `ToastProvider` (Context), `useToast()` hook, `ToastContainer` (fixed bottom-right), 4 typy (success/error/warning/info), animacja slide-in, auto-hide |
-| `src/components/ErrorBoundary.tsx` | ✅ Ukończono | React Class Component — Error Boundary dla widoków: widok błędu `Something went wrong` z przyciskiem `Try again` |
-
----
-
-## Endpointy API (Backend)
-
-| Strona | Metoda | Endpoint | Opis |
+| Ścieżka URL | Komponent Widoku | Moduł | Opis |
 |---|---|---|---|
-| Upload | `POST` | `/upload` | Wysyłka plików PDF (multipart/form-data), zwraca `batch_id` |
-| BatchStatus | `GET` | `/jobs/{batch_id}/status` | Polling: status paczki, progress, błędy plików |
-| BatchResults | `GET` | `/jobs/{batch_id}/results` | Komplet wyekstrahowanych rekordów `PolicyRecordResponse` |
-| BatchResults | `GET` | `/jobs/{batch_id}/export/csv` | Eksport danych do pliku CSV z BOM UTF-8-SIG |
-| Dashboard | `GET` | *(wymagany)* | Zagregowane metryki + lista ostatnich paczek |
+| `/` | `VehicleRegBatchesView` | `features/vehicle-registration` | Główny pulpit paczek dowodów rejestracyjnych, metryki skuteczności, szybki przycisk „Wgraj dowody” |
+| `/upload` | `VehicleRegUploadView` | `features/vehicle-registration` | Wgrywanie zdjęć dowodów rejestracyjnych (wyłącznie format JPG), baner z instrukcją o skanowaniu 1. strony |
+| `/jobs/:batchId` | `VehicleRegStatusView` | `features/vehicle-registration` | Monitorowanie postępu odczytu dowodu na żywo (fazy: orientacja, Aztec 2D, MRZ, segmentacja OCR, normalizacja) |
+| `/result/:batchId` | `VehicleRegResultsView` | `features/vehicle-registration` | Tabela odczytanych dowodów rejestracyjnych (nr rej, VIN, marka, rok), wyszukiwanie, modal szczegółów, eksport CSV |
+| `/settings` | `SettingsView` | `features/settings` | Ustawienia pól kopiowania rubryk dowodów rejestracyjnych do Excela oraz retencji danych w bazie |
 
 ---
 
-## Design System
+## Punkty Styku z API Backendowym (`policyReader`)
 
-Paleta kolorów, typografia i spacing zdefiniowane w `tailwind.config.js` na podstawie `screen_mockups/DESIGN.md`.  
-Font: **Inter** (400–900). Ikony: **Material Symbols Outlined** (variable font, Google Fonts).
+- `POST /api/v1/policies/upload` — przesyłanie zdjęć JPG dowodów rejestracyjnych (zwraca `batch_id`).
+- `GET /api/v1/policies/jobs/{batch_id}/status` — odpytywanie o postęp odczytu paczki w czasie rzeczywistym.
+- `GET /api/v1/policies/jobs/{batch_id}/results` — pobieranie odczytanych danych dowodów (rekordy z polami `numer_rejestracyjny`, `vin`, itp.).
+- `GET /api/v1/policies/jobs/{batch_id}/export/csv?doc_type=vehicle_registration` — eksport CSV dowodów (UTF-8-SIG).
+- `DELETE /api/v1/policies/batches/{batch_id}` — usuwanie paczki dowodów rejestracyjnych.
+- `DELETE /api/v1/policies/batches/{batch_id}/records/{record_id}` — usuwanie pojedynczego zdjęcia z paczki.

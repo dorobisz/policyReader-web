@@ -1,5 +1,5 @@
 import React from 'react';
-import { BatchStatus, PolicyRecordStatus } from '../types/api';
+import { BatchStatus, PolicyRecordStatus } from '../../types/api';
 
 export type StatusBadgeVariant = BatchStatus | PolicyRecordStatus | 'all';
 

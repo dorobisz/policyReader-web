@@ -4,11 +4,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout, ToastProvider, ErrorBoundary } from "./components";
 import "./index.css";
 
-import { DashboardView } from "./pages/DashboardView";
-import { UploadView } from "./pages/UploadView";
-import { BatchStatusView } from "./pages/BatchStatusView";
-import { BatchResultsView } from "./pages/BatchResultsView";
-import { SettingsView } from "./pages/SettingsView";
+import {
+  VehicleRegBatchesView,
+  VehicleRegUploadView,
+  VehicleRegStatusView,
+  VehicleRegResultsView,
+} from "./features/vehicle-registration";
+import { SettingsView } from "./features/settings";
 
 function App() {
   return (
@@ -16,11 +18,46 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<AppLayout />}>
-            <Route index element={<ErrorBoundary><DashboardView /></ErrorBoundary>} />
-            <Route path="upload" element={<ErrorBoundary><UploadView /></ErrorBoundary>} />
-            <Route path="jobs/:batchId" element={<ErrorBoundary><BatchStatusView /></ErrorBoundary>} />
-            <Route path="result/:batchId" element={<ErrorBoundary><BatchResultsView /></ErrorBoundary>} />
-            <Route path="settings" element={<ErrorBoundary><SettingsView /></ErrorBoundary>} />
+            <Route
+              index
+              element={
+                <ErrorBoundary>
+                  <VehicleRegBatchesView />
+                </ErrorBoundary>
+              }
+            />
+            <Route
+              path="upload"
+              element={
+                <ErrorBoundary>
+                  <VehicleRegUploadView />
+                </ErrorBoundary>
+              }
+            />
+            <Route
+              path="jobs/:batchId"
+              element={
+                <ErrorBoundary>
+                  <VehicleRegStatusView />
+                </ErrorBoundary>
+              }
+            />
+            <Route
+              path="result/:batchId"
+              element={
+                <ErrorBoundary>
+                  <VehicleRegResultsView />
+                </ErrorBoundary>
+              }
+            />
+            <Route
+              path="settings"
+              element={
+                <ErrorBoundary>
+                  <SettingsView />
+                </ErrorBoundary>
+              }
+            />
           </Route>
         </Routes>
       </BrowserRouter>
